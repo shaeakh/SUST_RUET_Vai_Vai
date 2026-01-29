@@ -9,17 +9,19 @@ export function generatePythonRunner(
   return `
 import json
 import sys
+from typing import List, Optional, Dict, Set, Tuple
 
+# User's code (at module level)
+${userCode}
+
+# Execute and handle errors
 try:
     # Read input from stdin
     input_data = json.load(sys.stdin)
-    
-    # User's code
-    ${userCode}
-    
+
     # Execute the function
     result = ${functionName}(*input_data['args'])
-    
+
     # Output result as JSON
     print(json.dumps({'output': result}))
 except Exception as e:
@@ -29,5 +31,5 @@ except Exception as e:
         'type': type(e).__name__
     }), file=sys.stderr)
     sys.exit(1)
-`.trim()
+`.trim();
 }

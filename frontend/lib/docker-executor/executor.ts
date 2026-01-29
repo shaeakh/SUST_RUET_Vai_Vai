@@ -1,7 +1,4 @@
 import { spawn } from "child_process";
-import { promises as fs } from "fs";
-import { join, resolve } from "path";
-import { tmpdir } from "os";
 import { randomUUID } from "crypto";
 import type {
   LanguageId,
@@ -20,151 +17,159 @@ interface DockerExecutionResult {
 }
 
 /**
+ * Get execution command that writes code to /tmp and runs it
+ * This avoids volume mounting issues by using the container's tmpfs
+ */
+function getExecutionCommand(
+  language: LanguageId,
+  base64Code: string,
+): string[] {
+  switch (language) {
+    case "javascript":
+      return [
+        "sh",
+        "-c",
+        `echo "${base64Code}" | base64 -d > /tmp/code.js && node /tmp/code.js`,
+      ];
+    case "python":
+      return [
+        "sh",
+        "-c",
+        `echo "${base64Code}" | base64 -d > /tmp/code.py && python3 /tmp/code.py`,
+      ];
+    case "java":
+      return [
+        "sh",
+        "-c",
+        `echo "${base64Code}" | base64 -d > /tmp/Solution.java && cd /tmp && javac Solution.java && java Solution`,
+      ];
+    case "cpp":
+      return [
+        "sh",
+        "-c",
+        `echo "${base64Code}" | base64 -d > /tmp/code.cpp && g++ -o /tmp/code /tmp/code.cpp && /tmp/code`,
+      ];
+    default:
+      throw new Error(`Unsupported language: ${language}`);
+  }
+}
+
+/**
  * Execute code in Docker container for a single test case
- * Each execution spawns a NEW isolated Docker container
+ * Code is passed via base64 encoding in the command, avoiding volume mount issues
  */
 async function executeTestCase(
   language: LanguageId,
   runnerCode: string,
   testInput: unknown,
-  timeout: number,
+  _timeout: number,
   executionId: string,
 ): Promise<DockerExecutionResult> {
   const startTime = Date.now();
-  // Create unique temp directory for this execution
-  const tempDir = await fs.mkdtemp(join(tmpdir(), `code-exec-${executionId}-`));
-  const codePath = join(tempDir, getCodeFileName(language));
   const imageName = DOCKER_CONFIG.images[language];
 
   // Generate unique container name for this execution
   const containerName = `code-runner-${executionId}-${randomUUID().slice(0, 8)}`;
 
-  try {
-    // Write runner code to temp file
-    await fs.writeFile(codePath, runnerCode, "utf-8");
-    // Ensure file is readable by container user (runner, often uid 1000)
-    await fs.chmod(codePath, 0o444);
+  // Base64 encode the runner code to safely pass it through shell
+  const base64Code = Buffer.from(runnerCode, "utf-8").toString("base64");
 
-    const fileName = getCodeFileName(language);
-    // Mount entire temp dir to /app (more reliable than single-file mount)
-    const absoluteTempDir = resolve(tempDir);
+  // Prepare Docker command - code is passed via base64 in the command
+  const dockerArgs = [
+    "run",
+    "--rm",
+    "--stop-timeout",
+    "2",
+    "--name",
+    containerName,
+    "--memory",
+    DOCKER_CONFIG.memoryLimit,
+    "--cpus",
+    DOCKER_CONFIG.cpuLimit,
+    "--network",
+    DOCKER_CONFIG.networkMode,
+    "--pids-limit",
+    String(DOCKER_CONFIG.pidsLimit),
+    "--cap-drop",
+    "ALL",
+    "--security-opt",
+    "no-new-privileges",
+    "--read-only",
+    "--tmpfs",
+    "/tmp:rw,exec,nosuid,size=50m", // Changed noexec to exec for compiled languages
+    "-i", // Interactive mode to allow stdin
+    imageName,
+    ...getExecutionCommand(language, base64Code),
+  ];
 
-    // Prepare Docker command - each execution gets its own isolated container
-    const dockerArgs = [
-      "run",
-      "--rm", // Automatically remove container after execution
-      "--stop-timeout",
-      "2", // Give container 2 seconds to stop gracefully
-      "--name",
-      containerName, // Unique container name for this execution
-      "--memory",
-      DOCKER_CONFIG.memoryLimit,
-      "--cpus",
-      DOCKER_CONFIG.cpuLimit,
-      "--network",
-      DOCKER_CONFIG.networkMode,
-      "--pids-limit",
-      String(DOCKER_CONFIG.pidsLimit),
-      "--cap-drop",
-      "ALL",
-      "--security-opt",
-      "no-new-privileges",
-      "--read-only",
-      "--tmpfs",
-      "/tmp:rw,noexec,nosuid,size=50m",
-      "--workdir",
-      "/app",
-      "-v",
-      `${absoluteTempDir}:/app:ro`,
-      imageName,
-      ...getExecutionCommand(language, fileName),
-    ];
+  return new Promise((resolve, reject) => {
+    const dockerProcess = spawn("docker", dockerArgs, {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
 
-    return new Promise((resolve, reject) => {
-      const dockerProcess = spawn("docker", dockerArgs, {
-        stdio: ["pipe", "pipe", "pipe"],
-      });
+    let stdout = "";
+    let stderr = "";
+    let timedOut = false;
 
-      let stdout = "";
-      let stderr = "";
-      let timedOut = false;
+    // Write test input to stdin
+    dockerProcess.stdin?.write(JSON.stringify({ args: testInput }));
+    dockerProcess.stdin?.end();
 
-      // Write test input to stdin
-      dockerProcess.stdin?.write(JSON.stringify({ args: testInput }));
-      dockerProcess.stdin?.end();
+    // Collect stdout
+    dockerProcess.stdout?.on("data", (data) => {
+      stdout += data.toString();
+    });
 
-      // Collect stdout
-      dockerProcess.stdout?.on("data", (data) => {
-        stdout += data.toString();
-      });
+    // Collect stderr
+    dockerProcess.stderr?.on("data", (data) => {
+      stderr += data.toString();
+    });
 
-      // Collect stderr
-      dockerProcess.stderr?.on("data", (data) => {
-        stderr += data.toString();
-      });
+    // Handle timeout
+    const totalTimeout = DOCKER_CONFIG.timeout;
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      dockerProcess.kill("SIGKILL");
+      const elapsed = Date.now() - startTime;
+      reject(
+        new Error(
+          `Time Limit Exceeded (${elapsed}ms). This includes Docker container startup time.`,
+        ),
+      );
+    }, totalTimeout);
 
-      // Handle timeout - use total timeout which includes Docker overhead
-      const totalTimeout = DOCKER_CONFIG.timeout;
-      const timeoutId = setTimeout(() => {
-        timedOut = true;
-        dockerProcess.kill("SIGKILL");
-        const elapsed = Date.now() - startTime;
-        reject(
-          new Error(
-            `Time Limit Exceeded (${elapsed}ms). This includes Docker container startup time.`,
-          ),
-        );
-      }, totalTimeout);
+    // Handle completion
+    dockerProcess.on("close", (code) => {
+      clearTimeout(timeoutId);
+      const runtimeMs = Date.now() - startTime;
 
-      // Handle completion
-      dockerProcess.on("close", (code) => {
-        clearTimeout(timeoutId);
-        const runtimeMs = Date.now() - startTime;
-
-        if (timedOut) {
-          // Container was killed due to timeout - ensure it's removed
-          cleanupContainer(containerName).catch((err) => {
-            console.error(`Failed to cleanup container ${containerName}:`, err);
-          });
-          return; // Already rejected
-        }
-
-        resolve({
-          stdout: stdout.trim(),
-          stderr: stderr.trim(),
-          exitCode: code || 0,
-          runtimeMs,
-        });
-      });
-
-      dockerProcess.on("error", (error) => {
-        clearTimeout(timeoutId);
-        // Ensure container is cleaned up on error
+      if (timedOut) {
         cleanupContainer(containerName).catch((err) => {
           console.error(`Failed to cleanup container ${containerName}:`, err);
         });
-        reject(error);
+        return;
+      }
+
+      resolve({
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        exitCode: code || 0,
+        runtimeMs,
       });
     });
-  } catch (error) {
-    // Ensure container is cleaned up on exception
-    await cleanupContainer(containerName).catch(() => {
-      // Ignore cleanup errors
+
+    dockerProcess.on("error", (error) => {
+      clearTimeout(timeoutId);
+      cleanupContainer(containerName).catch((err) => {
+        console.error(`Failed to cleanup container ${containerName}:`, err);
+      });
+      reject(error);
     });
-    throw error;
-  } finally {
-    // Cleanup temp directory
-    try {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    } catch (cleanupError) {
-      console.error("Failed to cleanup temp directory:", cleanupError);
-    }
-  }
+  });
 }
 
 /**
  * Cleanup Docker container if it still exists
- * This is a safety measure in case --rm flag didn't work
  */
 async function cleanupContainer(containerName: string): Promise<void> {
   return new Promise((resolve) => {
@@ -172,39 +177,8 @@ async function cleanupContainer(containerName: string): Promise<void> {
       stdio: "ignore",
     });
     cleanupProcess.on("close", () => resolve());
-    cleanupProcess.on("error", () => resolve()); // Ignore errors
+    cleanupProcess.on("error", () => resolve());
   });
-}
-
-/**
- * Get code file name based on language
- */
-function getCodeFileName(language: LanguageId): string {
-  const extensions: Record<LanguageId, string> = {
-    javascript: "code.js",
-    python: "code.py",
-    java: "Solution.java",
-    cpp: "code.cpp",
-  };
-  return extensions[language];
-}
-
-/**
- * Get execution command based on language
- */
-function getExecutionCommand(language: LanguageId, fileName: string): string[] {
-  switch (language) {
-    case "javascript":
-      return ["node", fileName];
-    case "python":
-      return ["python3", fileName];
-    case "java":
-      return ["sh", "-c", `javac ${fileName} && java Solution`];
-    case "cpp":
-      return ["sh", "-c", `g++ -o code ${fileName} && ./code`];
-    default:
-      throw new Error(`Unsupported language: ${language}`);
-  }
 }
 
 /**
@@ -215,14 +189,12 @@ function parseOutput(output: string): { output?: unknown; error?: string } {
     const parsed = JSON.parse(output);
     return parsed;
   } catch {
-    // If not JSON, treat as plain output
     return { output: output.trim() || "" };
   }
 }
 
 /**
  * Format output for display
- * Converts objects/arrays to readable string format
  */
 function formatOutputForDisplay(output: unknown): string {
   if (output === null || output === undefined) {
@@ -230,7 +202,6 @@ function formatOutputForDisplay(output: unknown): string {
   }
 
   if (typeof output === "string") {
-    // Try to parse as JSON to format it nicely
     try {
       const parsed = JSON.parse(output);
       return JSON.stringify(parsed, null, 0);
@@ -239,7 +210,6 @@ function formatOutputForDisplay(output: unknown): string {
     }
   }
 
-  // For arrays and objects, stringify with no indentation for compact display
   if (typeof output === "object") {
     return JSON.stringify(output, null, 0);
   }
@@ -251,23 +221,20 @@ function formatOutputForDisplay(output: unknown): string {
  * Compare actual output with expected output
  */
 function compareOutputs(actual: unknown, expected: string): boolean {
-  // Convert actual to string for comparison
   const actualStr = String(actual);
 
-  // Try to parse expected as JSON if it looks like JSON
   try {
     const expectedParsed = JSON.parse(expected);
     const actualParsed =
       typeof actual === "string" ? JSON.parse(actual) : actual;
     return JSON.stringify(actualParsed) === JSON.stringify(expectedParsed);
   } catch {
-    // Fallback to string comparison
     return actualStr.trim() === expected.trim();
   }
 }
 
 /**
- * Extract function name from code (simplified)
+ * Extract function name from code
  */
 function extractFunctionName(language: LanguageId, code: string): string {
   switch (language) {
@@ -280,7 +247,9 @@ function extractFunctionName(language: LanguageId, code: string): string {
       return match ? match[1] : "solution";
     }
     case "java": {
-      const match = code.match(/public\s+\w+\s+(\w+)\s*\(/i);
+      // Handle return types with brackets (int[]), generics (List<Integer>), etc.
+      // Match: public <return_type> <method_name>(
+      const match = code.match(/public\s+[\w\[\]<>,?\s]+\s+(\w+)\s*\(/);
       return match ? match[1] : "solution";
     }
     case "cpp": {
@@ -294,7 +263,6 @@ function extractFunctionName(language: LanguageId, code: string): string {
 
 /**
  * Main executor function
- * Each code execution spawns its own isolated Docker containers
  */
 export async function executeInDocker(
   language: LanguageId,
@@ -319,7 +287,7 @@ export async function executeInDocker(
     );
   }
 
-  // Check if required Docker images exist locally
+  // Check if required Docker image exists
   const requiredImage = DOCKER_CONFIG.images[language];
   const imageExists = await new Promise<boolean>((resolve) => {
     const imageCheck = spawn("docker", ["images", "-q", requiredImage]);
@@ -353,8 +321,7 @@ export async function executeInDocker(
     );
   }
 
-  // Generate unique execution ID for this code submission
-  // This ensures each code execution has its own isolated containers
+  // Generate unique execution ID
   const executionId = randomUUID().slice(0, 8);
 
   // Extract function name
@@ -363,39 +330,32 @@ export async function executeInDocker(
   // Generate runner code
   const runnerCode = generateRunner(language, sourceCode, functionName);
 
-  // Execute each test case - each test case gets its own Docker container
+  // Execute each test case
   const results: SingleTestResult[] = [];
   let totalRuntime = 0;
 
   for (const testCase of testCases) {
     try {
-      // Get test input (use inputJson if available, otherwise parse from input string)
       let testInput: unknown[] = [];
-      if (testCase.inputJson && testCase.inputJson.args) {
+      if (testCase.inputJson?.args) {
         testInput = testCase.inputJson.args;
       } else {
-        // Fallback: try to parse from input string
-        // This is a simplified parser - in production, use proper parsing
         testInput = [testCase.input];
       }
 
-      // Each test case execution spawns a NEW isolated Docker container
-      // Use total timeout which accounts for Docker overhead
       const execResult = await executeTestCase(
         language,
         runnerCode,
         testInput,
-        DOCKER_CONFIG.timeout, // Total timeout includes Docker startup
-        executionId, // Pass execution ID for unique container naming
+        DOCKER_CONFIG.timeout,
+        executionId,
       );
 
       totalRuntime += execResult.runtimeMs;
 
-      // Parse output
       const parsed = parseOutput(execResult.stdout);
 
       if (execResult.exitCode !== 0 || parsed.error) {
-        // Execution failed - show error and any output that was produced
         const actualOutput = parsed.output
           ? formatOutputForDisplay(parsed.output)
           : execResult.stderr || "";
@@ -408,7 +368,6 @@ export async function executeInDocker(
           errorMessage: parsed.error || execResult.stderr || "Execution failed",
         });
       } else {
-        // Execution succeeded - format and compare output
         const formattedOutput = formatOutputForDisplay(parsed.output);
         const passed = compareOutputs(parsed.output, testCase.expectedOutput);
 

@@ -1,35 +1,37 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import type { TestCase, SingleTestResult } from "@/types/code"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import type { TestCase, SingleTestResult } from "@/types/code";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface TestCasesPanelProps {
-  testCases: TestCase[]
-  results?: SingleTestResult[]
-  isRunning?: boolean
+  testCases: TestCase[];
+  results?: SingleTestResult[];
+  isRunning?: boolean;
+  /** Controlled tab value. When provided, parent can switch to "results" on run/submit. */
+  value?: string;
+  /** Callback when tab changes. Use with value for controlled mode. */
+  onValueChange?: (value: string) => void;
 }
 
 export function TestCasesPanel({
   testCases,
   results = [],
   isRunning = false,
+  value: controlledValue,
+  onValueChange,
 }: TestCasesPanelProps) {
-  const visibleTestCases = testCases.filter((tc) => !tc.isHidden)
-  const hiddenTestCases = testCases.filter((tc) => tc.isHidden)
-
   const getResultForTestCase = (testCaseId: string) => {
-    return results.find((r) => r.testCaseId === testCaseId)
-  }
-
+    return results.find((r) => r.testCaseId === testCaseId);
+  };
   return (
     <div className="flex h-full flex-col">
-      <Tabs defaultValue="test-cases" className="flex h-full flex-col">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="test-cases">Test Cases</TabsTrigger>
+      <Tabs onValueChange={onValueChange} className="flex h-full flex-col">
+        <TabsList className="grid w-full grid-cols-1">
+          {/* <TabsTrigger value="test-cases">Test Cases</TabsTrigger> */}
           <TabsTrigger value="results">
             Results
             {results.length > 0 && (
@@ -43,7 +45,7 @@ export function TestCasesPanel({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="test-cases" className="flex-1 overflow-auto">
+        {/* <TabsContent value="test-cases" className="flex-1 overflow-auto">
           <div className="space-y-3">
             {visibleTestCases.map((testCase, index) => (
               <Card key={testCase.id} size="sm">
@@ -82,7 +84,7 @@ export function TestCasesPanel({
               </Card>
             )}
           </div>
-        </TabsContent>
+        </TabsContent> */}
 
         <TabsContent value="results" className="flex-1 overflow-auto">
           {isRunning ? (
@@ -97,17 +99,17 @@ export function TestCasesPanel({
           ) : results.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <p className="text-sm text-muted-foreground">
-                No results yet. Click "Run" to test your code.
+                No results yet. Click &quot;Run&quot; to test your code.
               </p>
             </div>
           ) : (
             <div className="space-y-3">
               {testCases.map((testCase, index) => {
-                const result = getResultForTestCase(testCase.id)
-                const isHidden = testCase.isHidden
+                const result = getResultForTestCase(testCase.id);
+                const isHidden = testCase.isHidden;
 
                 if (!result && isHidden) {
-                  return null // Don't show hidden test cases that haven't been run
+                  return null; // Don't show hidden test cases that haven't been run
                 }
 
                 return (
@@ -168,20 +170,24 @@ export function TestCasesPanel({
                       {result && (
                         <>
                           <div>
-                            <span className={cn(
-                              "font-semibold",
-                              result.passed 
-                                ? "text-emerald-700 dark:text-emerald-200" 
-                                : "text-foreground"
-                            )}>
+                            <span
+                              className={cn(
+                                "font-semibold",
+                                result.passed
+                                  ? "text-emerald-700 dark:text-emerald-200"
+                                  : "text-foreground",
+                              )}
+                            >
                               Your Output:
                             </span>
-                            <pre className={cn(
-                              "mt-1 rounded p-2 font-mono text-[11px] whitespace-pre-wrap break-words",
-                              result.passed
-                                ? "bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20"
-                                : "bg-muted"
-                            )}>
+                            <pre
+                              className={cn(
+                                "mt-1 rounded p-2 font-mono text-[11px] whitespace-pre-wrap break-words",
+                                result.passed
+                                  ? "bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20"
+                                  : "bg-muted",
+                              )}
+                            >
                               {result.actualOutput || "(empty)"}
                             </pre>
                           </div>
@@ -197,7 +203,8 @@ export function TestCasesPanel({
                           )}
                           {!result.passed && !result.errorMessage && (
                             <div className="text-xs text-muted-foreground">
-                              <span className="font-semibold">Note:</span> Output does not match expected result.
+                              <span className="font-semibold">Note:</span>{" "}
+                              Output does not match expected result.
                             </div>
                           )}
                         </>
@@ -209,12 +216,12 @@ export function TestCasesPanel({
                       )}
                     </CardContent>
                   </Card>
-                )
+                );
               })}
             </div>
           )}
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

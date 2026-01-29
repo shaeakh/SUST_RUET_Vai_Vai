@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"
+import * as React from "react";
+import { Tabs as TabsPrimitive } from "@base-ui/react/tabs";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
-const Tabs = TabsPrimitive.Root
+const Tabs = TabsPrimitive.Root;
 
 const TabsList = React.forwardRef<
   HTMLDivElement,
@@ -21,8 +21,8 @@ const TabsList = React.forwardRef<
       )}
       {...props}
     />
-  )
-})
+  );
+});
 
 const TabsTrigger = React.forwardRef<
   HTMLButtonElement,
@@ -38,8 +38,8 @@ const TabsTrigger = React.forwardRef<
       )}
       {...props}
     />
-  )
-})
+  );
+});
 
 const TabsContent = React.forwardRef<
   HTMLDivElement,
@@ -55,8 +55,7 @@ const TabsContent = React.forwardRef<
       )}
       {...props}
     />
-  )
-})
+  );
+});
 
-export { Tabs, TabsList, TabsTrigger, TabsContent }
-
+export { Tabs, TabsList, TabsTrigger, TabsContent };
