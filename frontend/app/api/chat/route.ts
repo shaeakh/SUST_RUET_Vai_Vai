@@ -59,7 +59,7 @@ const SYSTEM_PROMPT_TEMPLATE = `You are a helpful learning assistant for univers
 
 export async function POST(req: Request) {
   try {
-    const { messages, documentIds } = await req.json();
+    const { messages, documentIds = [] } = await req.json();
 
     // Validate request
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -69,12 +69,8 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!documentIds || !Array.isArray(documentIds)) {
-      return new Response(
-        JSON.stringify({ error: "Document IDs array is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
+    // documentIds is optional, default to empty array
+    const docIds = Array.isArray(documentIds) ? documentIds : [];
 
     // Get the last user message for context retrieval
     const lastUserMessage = messages
@@ -94,11 +90,11 @@ export async function POST(req: Request) {
     // Retrieve relevant context from documents
     let contextString = "No documents selected for context.";
 
-    if (documentIds.length > 0) {
+    if (docIds.length > 0) {
       try {
         const retrievedChunks = await retrieveContext(
           lastUserMessageText,
-          documentIds,
+          docIds,
           5, // topK
           0.6, // similarity threshold
         );

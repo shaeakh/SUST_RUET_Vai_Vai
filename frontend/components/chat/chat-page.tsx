@@ -48,6 +48,12 @@ export function ChatPage({ className }: ChatPageProps) {
     refreshConversations();
   };
 
+  // Create conversation on first message (when user sends without clicking New Chat)
+  const handleConversationCreated = (id: string) => {
+    setCurrentConversationId(id);
+    refreshConversations();
+  };
+
   // Select conversation
   const handleSelectConversation = (id: string) => {
     const conversation = conversations.find((c) => c.id === id);
@@ -180,6 +186,7 @@ export function ChatPage({ className }: ChatPageProps) {
               documentIds={selectedDocuments}
               conversationId={currentConversationId || undefined}
               onConversationUpdate={handleUpdateTitle}
+              onConversationCreated={handleConversationCreated}
             />
           </div>
 

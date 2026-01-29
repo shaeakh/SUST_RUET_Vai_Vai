@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import { nanoid } from "nanoid";
 import { cn } from "@/lib/utils";
 import { MessageList } from "./message-list";
 import { ChatInput, QuickActions } from "./chat-input";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   getConversation,
   updateConversation,
+  createConversation,
 } from "@/lib/storage/conversations";
 import type { UIMessage } from "ai";
 
@@ -17,6 +19,7 @@ interface ChatInterfaceProps {
   documentIds: string[];
   conversationId?: string;
   onConversationUpdate?: (id: string, title: string) => void;
+  onConversationCreated?: (id: string) => void;
   className?: string;
 }
 
@@ -35,9 +38,32 @@ export function ChatInterface({
   documentIds,
   conversationId,
   onConversationUpdate,
+  onConversationCreated,
   className,
 }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = React.useState("");
+
+  // Track the actual conversation ID (may be created on first message)
+  const [activeConversationId, setActiveConversationId] = React.useState<
+    string | undefined
+  >(conversationId);
+
+  // Ref to access latest activeConversationId in callbacks
+  const activeConversationIdRef = React.useRef<string | undefined>(
+    conversationId,
+  );
+
+  // Sync activeConversationId when prop changes
+  React.useEffect(() => {
+    setActiveConversationId(conversationId);
+    activeConversationIdRef.current = conversationId;
+  }, [conversationId]);
+
+  // Generate a stable chat ID for useChat hook
+  const chatId = React.useMemo(
+    () => activeConversationId || nanoid(),
+    [activeConversationId],
+  );
 
   // Track if title has been updated for this conversation to avoid duplicate updates
   const titleUpdatedRef = React.useRef<string | null>(null);
@@ -53,13 +79,13 @@ export function ChatInterface({
   );
 
   // Load initial messages for the conversation
-  const getInitialMessages = React.useCallback((): UIMessage[] => {
-    if (conversationId) {
-      const conversation = getConversation(conversationId);
+  const initialMessages = React.useMemo((): UIMessage[] => {
+    if (activeConversationId) {
+      const conversation = getConversation(activeConversationId);
       return conversation?.messages || [];
     }
     return [];
-  }, [conversationId]);
+  }, [activeConversationId]);
 
   const {
     messages,
@@ -71,26 +97,37 @@ export function ChatInterface({
     stop,
   } = useChat({
     transport,
-    messages: getInitialMessages(),
-    id: conversationId,
+    id: chatId,
+    messages: initialMessages,
     onFinish: ({ messages: finishedMessages }) => {
       // Save all messages to localStorage when assistant finishes responding
-      // Use finishedMessages from callback which contains the complete updated array
-      if (conversationId && finishedMessages) {
-        updateConversation(conversationId, { messages: finishedMessages });
+      if (!finishedMessages || finishedMessages.length === 0) return;
 
-        // Update title if it's the first exchange (user + assistant = 2 messages)
-        if (
-          finishedMessages.length === 2 &&
-          onConversationUpdate &&
-          titleUpdatedRef.current !== conversationId
-        ) {
-          const firstMessage = finishedMessages[0];
-          const content = getMessageContent(firstMessage);
-          const title = generateTitle(content);
-          onConversationUpdate(conversationId, title);
-          titleUpdatedRef.current = conversationId;
-        }
+      let convId = activeConversationIdRef.current;
+
+      // Create conversation if it doesn't exist yet
+      if (!convId) {
+        const newConversation = createConversation(documentIds);
+        convId = newConversation.id;
+        activeConversationIdRef.current = convId;
+        setActiveConversationId(convId);
+        onConversationCreated?.(convId);
+      }
+
+      // Save messages
+      updateConversation(convId, { messages: finishedMessages });
+
+      // Update title if it's the first exchange (user + assistant = 2 messages)
+      if (
+        finishedMessages.length === 2 &&
+        onConversationUpdate &&
+        titleUpdatedRef.current !== convId
+      ) {
+        const firstMessage = finishedMessages[0];
+        const content = getMessageContent(firstMessage);
+        const title = generateTitle(content);
+        onConversationUpdate(convId, title);
+        titleUpdatedRef.current = convId;
       }
     },
     onError: (error: Error) => {
@@ -98,15 +135,24 @@ export function ChatInterface({
     },
   });
 
-  // Sync messages when conversation changes
+  // Sync messages when conversation changes (prop from parent)
   React.useEffect(() => {
-    const loadedMessages = getInitialMessages();
-    setMessages(loadedMessages);
+    if (conversationId) {
+      const conversation = getConversation(conversationId);
+      const loadedMessages = conversation?.messages || [];
+      setMessages(loadedMessages);
+    } else {
+      // Only clear messages if we're switching to no conversation from an existing one
+      // Don't clear if activeConversationId was just set by onFinish
+      if (!activeConversationIdRef.current) {
+        setMessages([]);
+      }
+    }
     // Reset title tracking when switching to a different conversation
     if (conversationId !== titleUpdatedRef.current) {
       titleUpdatedRef.current = null;
     }
-  }, [conversationId, getInitialMessages, setMessages]);
+  }, [conversationId, setMessages]);
 
   const isLoading = status === "streaming" || status === "submitted";
 
@@ -136,8 +182,8 @@ export function ChatInterface({
   // Clear chat
   const handleClearChat = () => {
     setMessages([]);
-    if (conversationId) {
-      updateConversation(conversationId, { messages: [] });
+    if (activeConversationId) {
+      updateConversation(activeConversationId, { messages: [] });
     }
   };
 
