@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import {
   generateMockCourseMaterials,
   generateMockPracticalProblems,
+  getAllMaterials,
   getCourseMaterials,
   getPracticalProblems,
   getUserAttempts,
@@ -25,6 +26,7 @@ import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 import { AddPracticalProblemDialog } from "./components/AddPracticalProblemDialog";
 import { AddStudyMaterialsDialog } from "./components/AddStudyMaterialsDialog";
+import { IntelligentSearch } from "./components/IntelligentSearch";
 import { PracticalProblemView } from "./components/PracticalProblemView";
 import { WeekAccordion } from "./components/WeekAccordion";
 
@@ -283,6 +285,15 @@ export default function CourseDetailPage() {
             </Button>
           )}
         </div>
+
+        {/* Search Bar */}
+        {courseMaterials && (
+          <div className="mb-6">
+            <IntelligentSearch
+              allMaterials={getAllMaterials(courseMaterials)}
+            />
+          </div>
+        )}
 
         {/* Theory Course Content */}
         {course.type === "Theory" && courseMaterials && (
