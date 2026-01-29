@@ -1,0 +1,8 @@
+*.md
+go.sum
+.DS_Store
+.vscode/
+.idea/
+node_modules/
+dist/
+.env
