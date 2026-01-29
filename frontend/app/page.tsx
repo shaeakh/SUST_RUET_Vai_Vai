@@ -1,126 +1,293 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "framer-motion";
+import {
+  BookOpen,
+  Code2,
+  Search,
+  Sparkles,
+  ShieldCheck,
+  MessageSquare,
+  ArrowRight,
+  ChevronRight,
+} from "lucide-react";
 
 export default function Page() {
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
+    <div className="min-h-screen bg-white text-slate-900 selection:bg-primary/10 selection:text-primary">
+      {/* Dynamic Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/[0.05] rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/[0.02] rounded-full blur-[120px] animate-pulse delay-700" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.02)_0%,transparent_100%)]" />
+      </div>
+
       {/* Navbar */}
-      <header className="w-full border-b border-border/60">
-        <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-lg font-semibold tracking-tight"
-          >
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
-              VV
+      <motion.header
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="fixed top-0 w-full z-50 border-b border-slate-200 bg-white/70 backdrop-blur-xl"
+      >
+        <nav className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-6 lg:px-12">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-primary/40 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-white border border-slate-200 text-primary font-bold text-xl">
+                C
+              </div>
+            </div>
+            <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">
+              Catalyst<span className="text-primary text-sm ml-1">AI</span>
             </span>
-            <span className="hidden sm:inline-block">VaiVai Dashboard</span>
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+            <Link
+              href="#features"
+              className="hover:text-primary transition-colors"
+            >
+              Features
+            </Link>
+            <Link
+              href="#how-it-works"
+              className="hover:text-primary transition-colors"
+            >
+              Methodology
+            </Link>
+            <Link href="#docs" className="hover:text-primary transition-colors">
+              Documentation
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-4">
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm transition-all hover:border-primary hover:text-primary hover:shadow-md"
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
             >
-              Login
+              Log in
             </Link>
             <Link
               href="/register"
-              className="inline-flex items-center justify-center rounded-md bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg"
+              className="relative group px-5 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-full overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-lg shadow-slate-200"
             >
-              Sign Up
+              <span className="relative z-10">Get Started</span>
+              <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-10 transition-opacity"></div>
             </Link>
           </div>
         </nav>
-      </header>
+      </motion.header>
 
-      {/* Hero */}
-      <main className="flex-1">
-        <section className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-          <div className="max-w-3xl text-center space-y-6">
-            <p className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-primary">
-              Smart analytics for growing teams
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-              Stay ahead with a{" "}
-              <span className="text-primary">real‑time dashboard</span> for your
-              platform.
-            </h1>
-            <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base">
-              Monitor users, engagement, and growth in one clean interface. Sign
-              up to start tracking your product health in seconds—no complex
-              setup required.
-            </p>
+      <main className="pt-20">
+        {/* Hero Section */}
+        <section className="relative px-6 py-24 md:py-40 lg:px-12">
+          <div className="mx-auto max-w-7xl">
+            <div className="text-center space-y-8">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-1.5 text-xs font-medium text-primary shadow-sm backdrop-blur-md"
+              >
+                <Sparkles className="h-3 w-3" />
+                <span>Next Generation AI Learning</span>
+              </motion.div>
 
-            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+              <div className="space-y-4">
+                <motion.h1
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                  className="mx-auto max-w-4xl text-5xl font-black tracking-tight sm:text-6xl md:text-8xl leading-[0.95] text-slate-900"
+                >
+                  Master your courses <br />
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/40">
+                    with intelligence.
+                  </span>
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.3 }}
+                  className="mx-auto max-w-2xl text-lg text-slate-500 md:text-xl font-light leading-relaxed"
+                >
+                  The AI-powered supplementary platform that organizes theory,
+                  masters lab codes, and generates validated learning materials
+                  in seconds.
+                </motion.p>
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12"
+              >
+                <Link
+                  href="/register"
+                  className="w-full sm:w-auto px-8 py-4 bg-primary text-white font-bold rounded-xl shadow-[0_10px_40px_rgba(255,0,0,0.15)] hover:shadow-primary/30 transition-all flex items-center justify-center gap-2 group"
+                >
+                  Start Learning Free
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+                <Link
+                  href="/login"
+                  className="w-full sm:w-auto px-8 py-4 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all font-semibold rounded-xl flex items-center justify-center gap-2 text-slate-900"
+                >
+                  Explore Dashboard
+                </Link>
+              </motion.div>
+
+              {/* Status Indicator */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1, duration: 1 }}
+                className="pt-12 flex items-center justify-center gap-8 text-[10px] uppercase tracking-[0.2em] text-slate-400"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                  RAG-Engine Online
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(255,0,0,0.3)]" />
+                  System Optimized
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Feature Grid */}
+        <section
+          id="features"
+          className="px-6 py-24 lg:px-12 bg-slate-50/50 border-y border-slate-200"
+        >
+          <div className="mx-auto max-w-7xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <FeatureCard
+                icon={<BookOpen className="h-6 w-6" />}
+                title="Theory & Lab CMS"
+                description="Organize lecture slides, PDFs, and code repositories in a unified, syntax-aware environment designed for academics."
+                delay={0.1}
+              />
+              <FeatureCard
+                icon={<Search className="h-6 w-6" />}
+                title="Semantic Retrieval"
+                description="RAG-based search engine that understands context. Find that specific code snippet or theoretical concept instantly."
+                delay={0.2}
+              />
+              <FeatureCard
+                icon={<Sparkles className="h-6 w-6" />}
+                title="AI Material Generation"
+                description="Generate structured reading notes and syntactically correct lab materials grounded in your course data."
+                delay={0.3}
+              />
+              <FeatureCard
+                icon={<ShieldCheck className="h-6 w-6" />}
+                title="Automated Validation"
+                description="Inbuilt linting, syntax checking, and reference grounding to ensure all AI-generated content is reliable."
+                delay={0.4}
+              />
+              <FeatureCard
+                icon={<MessageSquare className="h-6 w-6" />}
+                title="Conversational AI"
+                description="Ask questions, request summaries, and interact with your course materials through a seamless chat interface."
+                delay={0.5}
+              />
+              <FeatureCard
+                icon={<Code2 className="h-6 w-6" />}
+                title="Developer Friendly"
+                description="Support for multiple programming languages with structure-aware search for complex lab materials."
+                delay={0.6}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Call to action */}
+        <section className="px-6 py-32 lg:px-12 relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[300px] bg-primary/[0.08] blur-[150px] -z-10 rounded-full" />
+          <div className="mx-auto max-w-4xl text-center space-y-10">
+            <h2 className="text-4xl md:text-6xl font-black tracking-tight text-slate-900">
+              Ready to evolve your <br />
+              <span className="text-primary italic">learning experience?</span>
+            </h2>
+            <p className="text-slate-500 text-lg max-w-xl mx-auto font-light">
+              Join the future of university education. Upload your materials and
+              watch Catalyst turn them into a structured digital second brain.
+            </p>
+            <div className="pt-4">
               <Link
                 href="/register"
-                className="inline-flex w-full items-center justify-center rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg sm:w-auto"
+                className="inline-flex items-center gap-4 bg-slate-900 text-white px-10 py-5 rounded-full text-lg font-bold hover:scale-105 active:scale-95 transition-all shadow-xl shadow-slate-200"
               >
-                Get Started
+                Join the Platform
+                <ChevronRight className="h-5 w-5" />
               </Link>
-              <Link
-                href="/login"
-                className="inline-flex w-full items-center justify-center rounded-md border border-primary bg-background px-6 py-2.5 text-sm font-semibold text-primary shadow-sm transition-all hover:bg-primary/5 hover:shadow-md sm:w-auto"
-              >
-                Sign In
-              </Link>
-            </div>
-
-            <p className="mt-4 text-xs text-muted-foreground">
-              No credit card required. Get instant access to your personal
-              dashboard.
-            </p>
-          </div>
-
-          {/* Feature cards */}
-          <div className="mt-12 grid w-full gap-6 md:grid-cols-3">
-            <div className="group rounded-lg border border-border bg-card p-5 shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <span className="text-lg font-semibold">01</span>
-              </div>
-              <h3 className="text-sm font-semibold">Realtime overview</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Track key metrics like active users, engagement, and growth
-                without leaving your dashboard.
-              </p>
-            </div>
-
-            <div className="group rounded-lg border border-border bg-card p-5 shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <span className="text-lg font-semibold">02</span>
-              </div>
-              <h3 className="text-sm font-semibold">Simple access control</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Roles like User, Admin, and Moderator make it easy to manage who
-                can see what.
-              </p>
-            </div>
-
-            <div className="group rounded-lg border border-border bg-card p-5 shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
-              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <span className="text-lg font-semibold">03</span>
-              </div>
-              <h3 className="text-sm font-semibold">Designed for focus</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                A clean, minimal interface with smooth interactions that stays
-                out of your way.
-              </p>
             </div>
           </div>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="w-full border-t border-border/60">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 text-xs text-muted-foreground sm:px-6 lg:px-8">
-          <span>
-            © {new Date().getFullYear()} VaiVai Dashboard. All rights reserved.
-          </span>
-          <span className="hidden sm:inline-block">
-            Built with Next.js & Tailwind CSS.
-          </span>
+      <footer className="border-t border-slate-200 py-12 px-6 lg:px-12 bg-slate-50">
+        <div className="mx-auto max-w-7xl flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-[10px] font-bold">
+              C
+            </div>
+            <span className="font-bold tracking-tighter text-slate-900">
+              CATALYST <span className="text-slate-400">AI</span>
+            </span>
+          </div>
+          <p className="text-slate-400 text-xs tracking-widest uppercase">
+            © {new Date().getFullYear()} Catalyst Learning Systems. Built for
+            Excellence.
+          </p>
+          <div className="flex gap-6 text-slate-500 hover:text-slate-900 transition-colors text-xs font-medium">
+            <Link href="#">Privacy</Link>
+            <Link href="#">Terms</Link>
+            <Link href="#">Contact</Link>
+          </div>
         </div>
       </footer>
     </div>
+  );
+}
+
+function FeatureCard({
+  icon,
+  title,
+  description,
+  delay,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: any;
+  title: string;
+  description: string;
+  delay: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay }}
+      whileHover={{ y: -5 }}
+      className="group relative p-8 rounded-2xl bg-white border border-slate-200/60 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all"
+    >
+      <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-primary group-hover:scale-110 group-hover:text-white transition-all duration-500">
+        {icon}
+      </div>
+      <h3 className="text-xl font-bold mb-3 text-slate-900">{title}</h3>
+      <p className="text-slate-500 text-sm leading-relaxed font-light">
+        {description}
+      </p>
+
+      <div className="mt-6 flex items-center gap-2 text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-xs font-bold uppercase tracking-widest">
+        Learn more <ArrowRight className="h-3 w-3" />
+      </div>
+    </motion.div>
   );
 }

@@ -36,12 +36,14 @@ export const Navbar: React.FC<NavbarProps> = ({
       <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex items-center gap-2 text-base font-semibold tracking-tight sm:text-lg"
+          className="flex items-center gap-2 text-base font-bold tracking-tight sm:text-lg"
         >
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
-            VV
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 text-primary font-bold border border-primary/20">
+            C
           </span>
-          <span className="hidden sm:inline-block">VaiVai Dashboard</span>
+          <span className="hidden sm:inline-block">
+            Catalyst <span className="text-primary text-sm">AI</span>
+          </span>
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
