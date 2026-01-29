@@ -1,13 +1,19 @@
 "use client";
 
 import type { Classroom } from "@/lib/api/classroomApi";
+import type { Course, CourseType } from "@/lib/mock-courses";
 import { cn } from "@/lib/utils";
-import { CourseCard } from "./CourseCard";
+import CourseCard from "./CourseCard";
 
 interface CoursesGridProps {
   classrooms: Classroom[];
   isLoading?: boolean;
   className?: string;
+}
+
+function toCourseType(type: Classroom["type"]): CourseType {
+  const normalized = (type ?? "theory").toLowerCase();
+  return normalized === "lab" ? "Lab" : "Theory";
 }
 
 function CourseCardSkeleton() {
@@ -76,9 +82,18 @@ export function CoursesGrid({
         className,
       )}
     >
-      {classrooms.map((course) => (
-        <CourseCard key={course.id} course={course} />
-      ))}
+      {classrooms.map((classroom) => {
+        const course: Course = {
+          id: classroom.id,
+          name: classroom.name,
+          type: toCourseType(classroom.type),
+          tags: classroom.tags ?? [],
+        };
+
+        // Assuming CourseCard props need to match its defined props
+        // If CourseCard expects props like (id, name, type, tags) instead of a `course` prop, spread course:
+        return <CourseCard key={classroom.id} {...course} />;
+      })}
     </div>
   );
 }
