@@ -1,0 +1,28 @@
+services:
+  node-runner:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile.node
+    image: code-runner-node:latest
+    container_name: code-runner-node
+
+  python-runner:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile.python
+    image: code-runner-python:latest
+    container_name: code-runner-python
+
+  java-runner:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile.java
+    image: code-runner-java:latest
+    container_name: code-runner-java
+
+  cpp-runner:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile.cpp
+    image: code-runner-cpp:latest
+    container_name: code-runner-cpp
