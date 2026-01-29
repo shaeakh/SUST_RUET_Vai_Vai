@@ -87,10 +87,23 @@ func (cs *ContentService) GenerateEmbeddings(ctx context.Context, contentID, tex
 	chunks := cs.chunkText(text)
 
 	for chunkIndex, chunk := range chunks {
+		// Skip empty chunks
+		if strings.TrimSpace(chunk) == "" {
+			continue
+		}
+
+		// Validate UTF-8
+		if !isValidUTF8(chunk) {
+			fmt.Printf("Skipping chunk %d: invalid UTF-8 content\n", chunkIndex)
+			continue
+		}
+
 		// Generate embedding
 		embedding, err := cs.geminiEmbedder.Embed(ctx, chunk)
 		if err != nil {
-			return fmt.Errorf("failed to generate embedding for chunk %d: %w", chunkIndex, err)
+			// Log and skip problematic chunks instead of failing entire batch
+			fmt.Printf("Warning: Failed to generate embedding for chunk %d: %v\n", chunkIndex, err)
+			continue
 		}
 
 		// Prepare metadata
@@ -118,6 +131,16 @@ func (cs *ContentService) GenerateEmbeddings(ctx context.Context, contentID, tex
 	}
 
 	return nil
+}
+
+// isValidUTF8 checks if a string contains only valid UTF-8
+func isValidUTF8(s string) bool {
+	for _, r := range s {
+		if r == '\uFFFD' {
+			return false
+		}
+	}
+	return true
 }
 
 // GetContent retrieves content by ID

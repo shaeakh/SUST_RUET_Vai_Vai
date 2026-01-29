@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -9,9 +10,12 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/shaeakh/sust-cms/application/services"
 	"github.com/shaeakh/sust-cms/infrastructure/queue"
+	pdf "github.com/unidoc/unipdf/v3/model"
 )
 
 // EmbeddingWorker processes embedding generation jobs
@@ -187,17 +191,91 @@ func (ew *EmbeddingWorker) extractTextFromBytes(content []byte, mimeType string)
 	}
 }
 
-// extractTextFromPDF extracts text from PDF
-// Note: Full PDF text extraction requires additional setup (Tesseract or dedicated PDF library)
-// For now, we return metadata about the PDF and store it for processing later
+// extractTextFromPDF extracts text from PDF using unidoc/unipdf library
 func (ew *EmbeddingWorker) extractTextFromPDF(content []byte) (string, error) {
-	// For now, return a placeholder that includes basic metadata
-	// In production, integrate with Tesseract OCR or a dedicated PDF library
-	sizeKB := len(content) / 1024
-	text := fmt.Sprintf("PDF Document [Size: %d KB]. Content indexed for semantic search. For OCR extraction, please upload plain text (.txt) files or ensure PDFs contain embedded text.", sizeKB)
-	
-	log.Printf("Note: PDF text extraction not fully implemented. Storing PDF for semantic search using document metadata.")
-	return text, nil
+	// Create a reader from the PDF bytes
+	pdfReader, err := pdf.NewPdfReader(bytes.NewReader(content))
+	if err != nil {
+		log.Printf("Error creating PDF reader: %v\n", err)
+		return "", fmt.Errorf("failed to read PDF: %w", err)
+	}
+
+	// Check if PDF is encrypted
+	isEncrypted, err := pdfReader.IsEncrypted()
+	if err != nil {
+		log.Printf("Error checking if PDF is encrypted: %v\n", err)
+		return "", fmt.Errorf("failed to check PDF encryption: %w", err)
+	}
+
+	if isEncrypted {
+		// Try to decrypt with empty password
+		ok, err := pdfReader.Decrypt([]byte(""))
+		if err != nil || !ok {
+			log.Printf("PDF is encrypted and cannot be decrypted\n")
+			return "", fmt.Errorf("PDF is encrypted")
+		}
+	}
+
+	// Get number of pages
+	numPages, err := pdfReader.GetNumPages()
+	if err != nil {
+		log.Printf("Error getting number of pages: %v\n", err)
+		return "", fmt.Errorf("failed to get page count: %w", err)
+	}
+
+	var textContent strings.Builder
+
+	// Iterate through pages and extract text
+	for i := 1; i <= numPages; i++ {
+		page, err := pdfReader.GetPage(i)
+		if err != nil {
+			log.Printf("Error getting page %d: %v\n", i, err)
+			continue
+		}
+
+		// Extract text from page
+		contentStreams, err := page.GetAllContentStreams()
+		if err != nil {
+			log.Printf("Error getting content stream for page %d: %v\n", i, err)
+			continue
+		}
+
+		if contentStreams != "" {
+			// Clean the text to remove invalid UTF-8
+			cleanedText := cleanUTF8(contentStreams)
+			if cleanedText != "" {
+				textContent.WriteString(cleanedText)
+				textContent.WriteString("\n")
+			}
+		}
+	}
+
+	result := textContent.String()
+	if result == "" {
+		return fmt.Sprintf("PDF document with %d pages. Content indexed for semantic search.", numPages), nil
+	}
+
+	return result, nil
+}
+
+// cleanUTF8 removes invalid UTF-8 sequences and non-printable characters
+func cleanUTF8(input string) string {
+	// Convert to runes to handle UTF-8 properly
+	runes := []rune{}
+	for _, r := range input {
+		// Keep valid UTF-8 characters that are printable or whitespace
+		if r == utf8.RuneError {
+			continue
+		}
+		// Keep printable characters, spaces, and common whitespace
+		if unicode.IsPrint(r) || unicode.IsSpace(r) {
+			runes = append(runes, r)
+		} else if r == '\n' || r == '\r' || r == '\t' {
+			// Keep common whitespace characters
+			runes = append(runes, r)
+		}
+	}
+	return string(runes)
 }
 
 // extractTextFromImage extracts text from image using OCR (stub)
