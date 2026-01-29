@@ -38,7 +38,7 @@ export async function retrieveContext(
   query: string,
   documentIds: string[],
   topK: number = DEFAULT_TOP_K,
-  similarityThreshold: number = DEFAULT_SIMILARITY_THRESHOLD
+  similarityThreshold: number = DEFAULT_SIMILARITY_THRESHOLD,
 ): Promise<RetrievedChunk[]> {
   if (!documentIds || documentIds.length === 0) {
     console.warn("No document IDs provided for context retrieval");
@@ -68,7 +68,7 @@ export async function retrieveContext(
       ORDER BY dc.embedding <=> $1::vector
       LIMIT $3
       `,
-      [embeddingString, documentIds, topK * 2] // Fetch more to filter by threshold
+      [embeddingString, documentIds, topK * 2], // Fetch more to filter by threshold
     );
 
     // Filter by similarity threshold and map to RetrievedChunk format
@@ -78,13 +78,14 @@ export async function retrieveContext(
       .map((row) => ({
         content: row.content,
         documentId: row.document_id,
-        documentName: row.document_name || row.metadata?.documentName || "Document",
+        documentName:
+          row.document_name || row.metadata?.documentName || "Document",
         similarity: parseFloat(row.similarity),
         metadata: row.metadata || {},
       }));
 
     console.log(
-      `Retrieved ${chunks.length} relevant chunks for query: "${query.substring(0, 50)}..."`
+      `Retrieved ${chunks.length} relevant chunks for query: "${query.substring(0, 50)}..."`,
     );
 
     return chunks;
@@ -108,7 +109,7 @@ export function formatContextForPrompt(chunks: RetrievedChunk[]): string {
   return chunks
     .map(
       (chunk, index) =>
-        `[${index + 1}] From "${chunk.documentName}" (similarity: ${(chunk.similarity * 100).toFixed(1)}%):\n${chunk.content}`
+        `[${index + 1}] From "${chunk.documentName}" (similarity: ${(chunk.similarity * 100).toFixed(1)}%):\n${chunk.content}`,
     )
     .join("\n\n---\n\n");
 }
@@ -135,7 +136,7 @@ export function getSourceCitations(chunks: RetrievedChunk[]): string[] {
 export async function retrieveContextMultiQuery(
   queries: string[],
   documentIds: string[],
-  topK: number = DEFAULT_TOP_K
+  topK: number = DEFAULT_TOP_K,
 ): Promise<RetrievedChunk[]> {
   const allChunks: RetrievedChunk[] = [];
   const seenContent = new Set<string>();
