@@ -1,11 +1,7 @@
 "use client";
 
 import { Button } from "@/components/Button";
-import {
-  getInitialCourses,
-  persistCourses,
-  type Course,
-} from "@/lib/mock-courses";
+import { listClassrooms, type Classroom } from "@/lib/api/classroomApi";
 import * as React from "react";
 import { CoursesGrid } from "./CoursesGrid";
 import { CreateCourseDialog } from "./CreateCourseDialog";
@@ -19,21 +15,32 @@ export function DashboardCoursesView({
   title,
   subtitle,
 }: DashboardCoursesViewProps) {
-  const [courses, setCourses] = React.useState<Course[]>([]);
+  const [classrooms, setClassrooms] = React.useState<Classroom[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
-    setCourses(getInitialCourses());
-    setIsLoading(false);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await listClassrooms();
+        if (cancelled) return;
+        setClassrooms(res.data);
+      } catch {
+        if (cancelled) return;
+        setClassrooms([]);
+      } finally {
+        if (cancelled) return;
+        setIsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const handleCourseCreated = React.useCallback((course: Course) => {
-    setCourses((prev) => {
-      const next = [course, ...prev];
-      persistCourses(next);
-      return next;
-    });
+  const handleClassroomCreated = React.useCallback((classroom: Classroom) => {
+    setClassrooms((prev) => [classroom, ...prev]);
   }, []);
 
   return (
@@ -46,16 +53,16 @@ export function DashboardCoursesView({
           )}
         </div>
         <div className="shrink-0">
-          <Button onClick={() => setDialogOpen(true)}>Create Course</Button>
+          <Button onClick={() => setDialogOpen(true)}>Create Classroom</Button>
         </div>
       </header>
 
-      <CoursesGrid courses={courses} isLoading={isLoading} />
+      <CoursesGrid classrooms={classrooms} isLoading={isLoading} />
 
       <CreateCourseDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onCourseCreated={handleCourseCreated}
+        onClassroomCreated={handleClassroomCreated}
       />
     </div>
   );

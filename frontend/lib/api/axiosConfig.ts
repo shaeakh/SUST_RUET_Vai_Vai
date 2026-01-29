@@ -15,7 +15,12 @@ function getApiBaseUrl(): string {
   // Next.js: client-exposed env vars must be NEXT_PUBLIC_*
   const url =
     process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.VITE_API_BASE_URL;
-  return url?.trim() || "http://192.168.11.12:8080/api/v1";
+
+  // If no env is set, default to Next.js rewrite proxy on the client
+  // to avoid browser CORS issues.
+  if (url?.trim()) return url.trim();
+  if (isBrowser()) return "/api/v1";
+  return "http://192.168.11.12:8080/api/v1";
 }
 
 export const api: AxiosInstance = axios.create({

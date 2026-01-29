@@ -6,6 +6,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { getClassroomById, type Classroom } from "@/lib/api/classroomApi";
 import {
   generateMockCourseMaterials,
   generateMockPracticalProblems,
@@ -20,7 +21,6 @@ import {
   type PracticalProblem,
   type PracticalProblemsData,
 } from "@/lib/mock-course-data";
-import { getInitialCourses } from "@/lib/mock-courses";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
@@ -38,6 +38,7 @@ export default function CourseDetailPage() {
   const params = useParams();
   const { user, isAdmin } = useAuth();
   const id = typeof params.id === "string" ? params.id : "";
+  const [classroom, setClassroom] = React.useState<Classroom | null>(null);
   const [course, setCourse] = React.useState<{
     id: string;
     name: string;
@@ -61,15 +62,24 @@ export default function CourseDetailPage() {
   // Load course data
   React.useEffect(() => {
     if (!id) return;
-    const courses = getInitialCourses();
-    const foundCourse = courses.find((c) => c.id === id);
-    if (foundCourse) {
-      setCourse({
-        id: foundCourse.id,
-        name: foundCourse.name,
-        type: foundCourse.type,
-      });
-    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getClassroomById(id);
+        if (cancelled) return;
+        setClassroom(res.data);
+        // Backend "classroom" doesn't provide lab/theory yet; default to Theory.
+        setCourse({ id: res.data.id, name: res.data.name, type: "Theory" });
+      } catch {
+        if (cancelled) return;
+        setClassroom(null);
+        // Fallback: still set minimal course so page isn't blank.
+        setCourse({ id, name: "Classroom", type: "Theory" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   // Load course materials
@@ -224,15 +234,24 @@ export default function CourseDetailPage() {
                   <h1 className="text-3xl font-bold tracking-tight">
                     {course.name}
                   </h1>
-                  <Badge
-                    variant={course.type === "Theory" ? "default" : "secondary"}
-                  >
-                    {course.type}
-                  </Badge>
+                  <Badge variant="secondary">Classroom</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Course ID: {course.id}
+                  Classroom ID: {course.id}
                 </p>
+                {classroom?.join_code && (
+                  <p className="text-sm text-muted-foreground">
+                    Join code:{" "}
+                    <span className="font-medium text-foreground">
+                      {classroom.join_code}
+                    </span>
+                  </p>
+                )}
+                {classroom?.description && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {classroom.description}
+                  </p>
+                )}
               </div>
               {isAdmin && (
                 <Button
@@ -354,7 +373,7 @@ export default function CourseDetailPage() {
               </Link>
               <Link href="/dashboard/courses">
                 <Button variant="subtle" size="sm">
-                  My Courses
+                  My Classrooms
                 </Button>
               </Link>
             </div>

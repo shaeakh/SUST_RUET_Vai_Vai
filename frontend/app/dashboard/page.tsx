@@ -9,7 +9,7 @@ export default function DashboardPage() {
   return (
     <DashboardCoursesView
       title={`Welcome, ${user?.full_name ?? "there"}`}
-      subtitle="Here's a quick overview of your courses. Create one or open any card to continue."
+      subtitle="Here's a quick overview of your classrooms. Create one or open any card to continue."
     />
   );
 }
