@@ -10,49 +10,50 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuth } from "@/hooks/useAuth";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  generateCourseId,
-  type Course,
-  type CourseType,
-} from "@/lib/mock-courses";
+  createClassroom,
+  type Classroom,
+  type ClassroomType,
+} from "@/lib/api/classroomApi";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import * as React from "react";
-import { TagsInput } from "./TagsInput";
 
 interface CreateCourseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCourseCreated: (course: Course) => void;
+  onClassroomCreated: (classroom: Classroom) => void;
 }
 
-const COURSE_TYPES: { value: CourseType; label: string }[] = [
-  { value: "Lab", label: "Lab" },
-  { value: "Theory", label: "Theory" },
+const CLASSROOM_TYPES: { value: ClassroomType; label: string }[] = [
+  { value: "lab", label: "lab" },
+  { value: "theory", label: "theory" },
 ];
 
 export function CreateCourseDialog({
   open,
   onOpenChange,
-  onCourseCreated,
+  onClassroomCreated,
 }: CreateCourseDialogProps) {
   const router = useRouter();
-  const { user } = useAuth();
-  const [title, setTitle] = React.useState("");
-  const [courseType, setCourseType] = React.useState<CourseType | "">("");
-  const [tags, setTags] = React.useState<string[]>([]);
+  const [name, setName] = React.useState("");
+  const [type, setType] = React.useState<ClassroomType | "">("");
+  const [description, setDescription] = React.useState("");
   const [errors, setErrors] = React.useState<{
-    title?: string;
+    name?: string;
     type?: string;
+    description?: string;
   }>({});
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
 
   const reset = React.useCallback(() => {
-    setTitle("");
-    setCourseType("");
-    setTags([]);
+    setName("");
+    setType("");
+    setDescription("");
     setErrors({});
+    setSubmitError(null);
     setSubmitting(false);
   }, []);
 
@@ -75,30 +76,33 @@ export function CreateCourseDialog({
   }, [open, onOpenChange]);
 
   const validate = (): boolean => {
-    const next: { title?: string; type?: string } = {};
-    if (!title.trim()) next.title = "Course name is required.";
-    if (!courseType) next.type = "Course type is required.";
+    const next: { name?: string; type?: string; description?: string } = {};
+    if (!name.trim()) next.name = "Course name is required.";
+    if (!type) next.type = "Course type is required.";
+    if (!description.trim()) next.description = "Description is required.";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate() || submitting) return;
     setSubmitting(true);
-    const id = generateCourseId();
-    const course: Course = {
-      id,
-      name: title.trim(),
-      type: courseType as CourseType,
-      tags: [...tags],
-      logo: "/placeholder-icon.svg",
-      created_by: user?.user_id,
-    };
-    onCourseCreated(course);
-    onOpenChange(false);
-    reset();
-    router.push(`/course/${id}`);
+    setSubmitError(null);
+    try {
+      const res = await createClassroom({
+        name: name.trim(),
+        type: type as ClassroomType,
+        description: description.trim(),
+      });
+      onClassroomCreated(res.data);
+      onOpenChange(false);
+      reset();
+      router.push(`/course/${res.data.id}`);
+    } catch {
+      setSubmitError("Failed to create classroom. Please try again.");
+      setSubmitting(false);
+    }
   };
 
   if (!open) return null;
@@ -125,17 +129,17 @@ export function CreateCourseDialog({
           id="create-course-dialog-title"
           className="text-lg font-semibold tracking-tight"
         >
-          Create Course
+          Create Classroom
         </h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="course-name">Course Name</Label>
+            <Label htmlFor="classroom-name">Course Name</Label>
             <Input
-              id="course-name"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              id="classroom-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Introduction to Machine Learning"
-              error={errors.title}
+              error={errors.name}
               disabled={submitting}
               aria-required="true"
               autoFocus
@@ -144,10 +148,10 @@ export function CreateCourseDialog({
           <div className="space-y-2">
             <Label id="course-type-label">Course Type</Label>
             <Select
-              value={courseType || null}
-              onValueChange={(v) => setCourseType((v ?? "") as CourseType | "")}
+              value={type || null}
+              onValueChange={(v) => setType((v ?? "") as ClassroomType | "")}
               disabled={submitting}
-              items={COURSE_TYPES}
+              items={CLASSROOM_TYPES}
             >
               <SelectTrigger
                 id="course-type"
@@ -158,7 +162,7 @@ export function CreateCourseDialog({
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                {COURSE_TYPES.map(({ value, label }) => (
+                {CLASSROOM_TYPES.map(({ value, label }) => (
                   <SelectItem key={value} value={value}>
                     {label}
                   </SelectItem>
@@ -170,15 +174,24 @@ export function CreateCourseDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label id="tags-label">Tags</Label>
-            <TagsInput
-              value={tags}
-              onChange={setTags}
-              placeholder="e.g. AI, Python, Week 1"
+            <Label htmlFor="classroom-description">Description</Label>
+            <Textarea
+              id="classroom-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Anything string"
               disabled={submitting}
-              aria-label="Tags"
+              aria-invalid={!!errors.description}
             />
+            {errors.description && (
+              <p className="text-xs font-medium text-red-600">
+                {errors.description}
+              </p>
+            )}
           </div>
+          {submitError && (
+            <p className="text-sm font-medium text-red-600">{submitError}</p>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <Button
               type="button"
@@ -189,7 +202,7 @@ export function CreateCourseDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Creating…" : "Create Course"}
+              {submitting ? "Creating…" : "Create Classroom"}
             </Button>
           </div>
         </form>
