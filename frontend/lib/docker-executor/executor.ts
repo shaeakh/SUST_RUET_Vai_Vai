@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
 import { promises as fs } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { tmpdir } from "os";
 import { randomUUID } from "crypto";
 import type {
@@ -42,6 +42,12 @@ async function executeTestCase(
   try {
     // Write runner code to temp file
     await fs.writeFile(codePath, runnerCode, "utf-8");
+    // Ensure file is readable by container user (runner, often uid 1000)
+    await fs.chmod(codePath, 0o444);
+
+    const fileName = getCodeFileName(language);
+    // Mount entire temp dir to /app (more reliable than single-file mount)
+    const absoluteTempDir = resolve(tempDir);
 
     // Prepare Docker command - each execution gets its own isolated container
     const dockerArgs = [
@@ -69,9 +75,9 @@ async function executeTestCase(
       "--workdir",
       "/app",
       "-v",
-      `${codePath}:/app/${getCodeFileName(language)}:ro`,
+      `${absoluteTempDir}:/app:ro`,
       imageName,
-      ...getExecutionCommand(language, getCodeFileName(language)),
+      ...getExecutionCommand(language, fileName),
     ];
 
     return new Promise((resolve, reject) => {
@@ -222,7 +228,7 @@ function formatOutputForDisplay(output: unknown): string {
   if (output === null || output === undefined) {
     return "null";
   }
-  
+
   if (typeof output === "string") {
     // Try to parse as JSON to format it nicely
     try {
@@ -232,12 +238,12 @@ function formatOutputForDisplay(output: unknown): string {
       return output;
     }
   }
-  
+
   // For arrays and objects, stringify with no indentation for compact display
   if (typeof output === "object") {
     return JSON.stringify(output, null, 0);
   }
-  
+
   return String(output);
 }
 
@@ -393,7 +399,7 @@ export async function executeInDocker(
         const actualOutput = parsed.output
           ? formatOutputForDisplay(parsed.output)
           : execResult.stderr || "";
-        
+
         results.push({
           testCaseId: testCase.id,
           passed: false,
@@ -415,7 +421,8 @@ export async function executeInDocker(
         });
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Execution failed";
+      const errorMessage =
+        err instanceof Error ? err.message : "Execution failed";
       results.push({
         testCaseId: testCase.id,
         passed: false,
