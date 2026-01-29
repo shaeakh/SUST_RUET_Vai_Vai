@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@/hooks/useAuth";
 import {
   generateCourseId,
   type Course,
@@ -37,6 +38,7 @@ export function CreateCourseDialog({
   onCourseCreated,
 }: CreateCourseDialogProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const [title, setTitle] = React.useState("");
   const [courseType, setCourseType] = React.useState<CourseType | "">("");
   const [tags, setTags] = React.useState<string[]>([]);
@@ -91,6 +93,7 @@ export function CreateCourseDialog({
       type: courseType as CourseType,
       tags: [...tags],
       logo: "/placeholder-icon.svg",
+      created_by: user?.user_id,
     };
     onCourseCreated(course);
     onOpenChange(false);

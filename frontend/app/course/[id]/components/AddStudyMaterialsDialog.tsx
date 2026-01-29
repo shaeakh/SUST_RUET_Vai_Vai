@@ -209,7 +209,10 @@ export function AddStudyMaterialsDialog({
           {/* Week Selection */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Assign to Week</label>
-            <Select value={selectedWeek} onValueChange={setSelectedWeek}>
+            <Select
+              value={selectedWeek}
+              onValueChange={(v) => setSelectedWeek(v ?? "")}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a week" />
               </SelectTrigger>
