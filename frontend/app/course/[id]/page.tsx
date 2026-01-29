@@ -2,11 +2,15 @@
 
 import { Button } from "@/components/Button";
 import { Navbar } from "@/components/Navbar";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
+import { getClassroomById, type Classroom } from "@/lib/api/classroomApi";
 import {
   generateMockCourseMaterials,
   generateMockPracticalProblems,
+  getAllMaterials,
   getCourseMaterials,
   getPracticalProblems,
   getUserAttempts,
@@ -17,31 +21,24 @@ import {
   type PracticalProblem,
   type PracticalProblemsData,
 } from "@/lib/mock-course-data";
-import { getInitialCourses } from "@/lib/mock-courses";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import * as React from "react";
 import { AddPracticalProblemDialog } from "./components/AddPracticalProblemDialog";
 import { AddStudyMaterialsDialog } from "./components/AddStudyMaterialsDialog";
+import { IntelligentSearch } from "./components/IntelligentSearch";
 import { PracticalProblemView } from "./components/PracticalProblemView";
 import { WeekAccordion } from "./components/WeekAccordion";
-
-interface User {
-  name: string;
-  email: string;
-  role: string;
-}
 
 type LabTab = "study-materials" | "practical";
 
 export default function CourseDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const { user, isAdmin } = useAuth();
   const id = typeof params.id === "string" ? params.id : "";
-  const [user, setUser] = React.useState<User | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [classroom, setClassroom] = React.useState<Classroom | null>(null);
   const [course, setCourse] = React.useState<{
     id: string;
     name: string;
@@ -62,40 +59,27 @@ export default function CourseDetailPage() {
     Record<string, number>
   >({});
 
-  const isAdmin = user?.role === "admin";
-
-  // Load user
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem("vai-vai-user");
-    if (!stored) {
-      router.replace("/login");
-      return;
-    }
-    try {
-      const userData = JSON.parse(stored) as User;
-      setUser(userData);
-    } catch {
-      window.localStorage.removeItem("vai-vai-user");
-      router.replace("/login");
-      return;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [router]);
-
   // Load course data
   React.useEffect(() => {
     if (!id) return;
-    const courses = getInitialCourses();
-    const foundCourse = courses.find((c) => c.id === id);
-    if (foundCourse) {
-      setCourse({
-        id: foundCourse.id,
-        name: foundCourse.name,
-        type: foundCourse.type,
-      });
-    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getClassroomById(id);
+        if (cancelled) return;
+        setClassroom(res.data);
+        // Backend "classroom" doesn't provide lab/theory yet; default to Theory.
+        setCourse({ id: res.data.id, name: res.data.name, type: "Theory" });
+      } catch {
+        if (cancelled) return;
+        setClassroom(null);
+        // Fallback: still set minimal course so page isn't blank.
+        setCourse({ id, name: "Classroom", type: "Theory" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   // Load course materials
@@ -233,73 +217,87 @@ export default function CourseDetailPage() {
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-        <p className="text-sm text-muted-foreground">Loading course...</p>
-      </div>
-    );
-  }
-
-  if (!user || !course) return null;
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Navbar userName={user.name} showAuthLinks={false} showDashboardLinks />
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Course Header */}
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold tracking-tight">
-                {course.name}
-              </h1>
-              <Badge
-                variant={course.type === "Theory" ? "default" : "secondary"}
-              >
-                {course.type}
-              </Badge>
+    <ProtectedRoute>
+      {!user || !course ? null : (
+        <div className="min-h-screen bg-background text-foreground">
+          <Navbar
+            userName={user.full_name}
+            showAuthLinks={false}
+            showDashboardLinks
+          />
+          <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            {/* Course Header */}
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold tracking-tight">
+                    {course.name}
+                  </h1>
+                  <Badge variant="secondary">Classroom</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Classroom ID: {course.id}
+                </p>
+                {classroom?.join_code && (
+                  <p className="text-sm text-muted-foreground">
+                    Join code:{" "}
+                    <span className="font-medium text-foreground">
+                      {classroom.join_code}
+                    </span>
+                  </p>
+                )}
+                {classroom?.description && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {classroom.description}
+                  </p>
+                )}
+              </div>
+              {isAdmin && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    if (course.type === "Lab" && labTab === "practical") {
+                      setShowAddProblemDialog(true);
+                    } else {
+                      setShowAddMaterialsDialog(true);
+                    }
+                  }}
+                >
+                  <HugeiconsIcon icon={PlusSignIcon} className="size-4 mr-2" />
+                  {course.type === "Lab" && labTab === "practical"
+                    ? "Add Practical Problem"
+                    : "Add Study Materials"}
+                </Button>
+              )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Course ID: {course.id}
-            </p>
-          </div>
-          {isAdmin && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => {
-                if (course.type === "Lab" && labTab === "practical") {
-                  setShowAddProblemDialog(true);
-                } else {
-                  setShowAddMaterialsDialog(true);
-                }
-              }}
-            >
-              <HugeiconsIcon icon={PlusSignIcon} className="size-4 mr-2" />
-              {course.type === "Lab" && labTab === "practical"
-                ? "Add Practical Problem"
-                : "Add Study Materials"}
-            </Button>
-          )}
-        </div>
 
-        {/* Theory Course Content */}
-        {course.type === "Theory" && courseMaterials && (
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Study Materials</h2>
-            <WeekAccordion weeks={courseMaterials.weeks} />
-          </Card>
-        )}
+            {/* Search Bar */}
+            {courseMaterials && (
+              <div className="mb-6">
+                <IntelligentSearch
+                  allMaterials={getAllMaterials(courseMaterials)}
+                />
+              </div>
+            )}
 
-        {/* Lab Course Content with Tabs */}
-        {course.type === "Lab" && (
-          <div className="space-y-4">
-            {/* Tab Navigation */}
-            <div className="flex gap-2 border-b border-border">
-              <button
-                onClick={() => setLabTab("study-materials")}
-                className={`
+            {/* Theory Course Content */}
+            {course.type === "Theory" && courseMaterials && (
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Study Materials</h2>
+                <WeekAccordion weeks={courseMaterials.weeks} />
+              </Card>
+            )}
+
+            {/* Lab Course Content with Tabs */}
+            {course.type === "Lab" && (
+              <div className="space-y-4">
+                {/* Tab Navigation */}
+                <div className="flex gap-2 border-b border-border">
+                  <button
+                    onClick={() => setLabTab("study-materials")}
+                    className={`
                   px-4 py-2 text-sm font-medium transition-colors border-b-2
                   ${
                     labTab === "study-materials"
@@ -307,12 +305,12 @@ export default function CourseDetailPage() {
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   }
                 `}
-              >
-                Study Materials
-              </button>
-              <button
-                onClick={() => setLabTab("practical")}
-                className={`
+                  >
+                    Study Materials
+                  </button>
+                  <button
+                    onClick={() => setLabTab("practical")}
+                    className={`
                   px-4 py-2 text-sm font-medium transition-colors border-b-2
                   ${
                     labTab === "practical"
@@ -320,76 +318,80 @@ export default function CourseDetailPage() {
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   }
                 `}
-              >
-                Practical
-              </button>
-            </div>
+                  >
+                    Practical
+                  </button>
+                </div>
 
-            {/* Study Materials Tab */}
-            {labTab === "study-materials" && courseMaterials && (
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Study Materials</h2>
-                <WeekAccordion weeks={courseMaterials.weeks} />
-              </Card>
-            )}
-
-            {/* Practical Tab */}
-            {labTab === "practical" && practicalProblems && (
-              <Card className="p-6">
-                {isAdmin && (
-                  <div className="mb-4 flex justify-end">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => setShowAddProblemDialog(true)}
-                    >
-                      <HugeiconsIcon
-                        icon={PlusSignIcon}
-                        className="size-4 mr-2"
-                      />
-                      Add Practical Problem
-                    </Button>
-                  </div>
+                {/* Study Materials Tab */}
+                {labTab === "study-materials" && courseMaterials && (
+                  <Card className="p-6">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Study Materials
+                    </h2>
+                    <WeekAccordion weeks={courseMaterials.weeks} />
+                  </Card>
                 )}
-                <PracticalProblemView
-                  problems={practicalProblems.problems}
-                  selectedProblemId={selectedProblemId}
-                  onProblemSelect={setSelectedProblemId}
-                  userAttempts={userAttempts}
-                  userId={user.email}
-                  isAdmin={isAdmin}
-                />
-              </Card>
+
+                {/* Practical Tab */}
+                {labTab === "practical" && practicalProblems && (
+                  <Card className="p-6">
+                    {isAdmin && (
+                      <div className="mb-4 flex justify-end">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => setShowAddProblemDialog(true)}
+                        >
+                          <HugeiconsIcon
+                            icon={PlusSignIcon}
+                            className="size-4 mr-2"
+                          />
+                          Add Practical Problem
+                        </Button>
+                      </div>
+                    )}
+                    <PracticalProblemView
+                      problems={practicalProblems.problems}
+                      selectedProblemId={selectedProblemId}
+                      onProblemSelect={setSelectedProblemId}
+                      userAttempts={userAttempts}
+                      userId={user.email}
+                      isAdmin={isAdmin}
+                    />
+                  </Card>
+                )}
+              </div>
             )}
-          </div>
-        )}
 
-        {/* Navigation Links */}
-        <div className="mt-8 flex gap-3">
-          <Link href="/dashboard">
-            <Button variant="outline" size="sm">
-              Back to Dashboard
-            </Button>
-          </Link>
-          <Link href="/dashboard/courses">
-            <Button variant="subtle" size="sm">
-              My Courses
-            </Button>
-          </Link>
+            {/* Navigation Links */}
+            <div className="mt-8 flex gap-3">
+              <Link href="/dashboard">
+                <Button variant="outline" size="sm">
+                  Back to Dashboard
+                </Button>
+              </Link>
+              <Link href="/dashboard/courses">
+                <Button variant="subtle" size="sm">
+                  My Classrooms
+                </Button>
+              </Link>
+            </div>
+          </main>
+
+          {/* Dialogs */}
+          <AddStudyMaterialsDialog
+            open={showAddMaterialsDialog}
+            onOpenChange={setShowAddMaterialsDialog}
+            onSave={handleAddMaterials}
+          />
+          <AddPracticalProblemDialog
+            open={showAddProblemDialog}
+            onOpenChange={setShowAddProblemDialog}
+            onSave={handleAddPracticalProblem}
+          />
         </div>
-      </main>
-
-      {/* Dialogs */}
-      <AddStudyMaterialsDialog
-        open={showAddMaterialsDialog}
-        onOpenChange={setShowAddMaterialsDialog}
-        onSave={handleAddMaterials}
-      />
-      <AddPracticalProblemDialog
-        open={showAddProblemDialog}
-        onOpenChange={setShowAddProblemDialog}
-        onSave={handleAddPracticalProblem}
-      />
-    </div>
+      )}
+    </ProtectedRoute>
   );
 }

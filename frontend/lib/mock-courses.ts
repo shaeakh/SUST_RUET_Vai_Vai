@@ -11,6 +11,7 @@ export interface Course {
   type: CourseType;
   tags: string[];
   logo?: string;
+  created_by?: string;
 }
 
 const STORAGE_KEY = "vai-vai-courses";

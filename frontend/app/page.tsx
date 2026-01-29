@@ -1,6 +1,19 @@
+"use client";
+
+import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import * as React from "react";
 
 export default function Page() {
+  const router = useRouter();
+  const { loading, isAuthenticated } = useAuth();
+
+  React.useEffect(() => {
+    if (loading) return;
+    if (isAuthenticated) router.replace("/dashboard");
+  }, [isAuthenticated, loading, router]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* Navbar */}

@@ -5,8 +5,8 @@ import { DashboardCoursesView } from "../components/DashboardCoursesView";
 export default function DashboardCoursesPage() {
   return (
     <DashboardCoursesView
-      title="My Courses"
-      subtitle="View and manage all courses you've engaged with."
+      title="My Classrooms"
+      subtitle="View and manage all classrooms you've engaged with."
     />
   );
 }
