@@ -49,7 +49,7 @@ export function ChatInput({
     <form
       onSubmit={onSubmit}
       className={cn(
-        "flex items-end gap-2 p-4 border-t bg-background",
+        "flex items-end gap-2 p-4 border-t border-slate-200 bg-white",
         className,
       )}
     >
@@ -63,14 +63,14 @@ export function ChatInput({
           disabled={isLoading || disabled}
           rows={1}
           className={cn(
-            "w-full resize-none rounded-xl border border-input bg-background px-4 py-3 pr-12",
-            "text-sm placeholder:text-muted-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            "w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12 transition-all",
+            "text-sm placeholder:text-slate-400 text-slate-800",
+            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary",
             "disabled:cursor-not-allowed disabled:opacity-50",
             "min-h-[48px] max-h-[200px]",
           )}
         />
-        <span className="absolute bottom-3 right-3 text-[10px] text-muted-foreground pointer-events-none">
+        <span className="absolute bottom-3 right-3 text-[10px] text-slate-400 font-medium pointer-events-none">
           Enter to send
         </span>
       </div>
@@ -79,7 +79,7 @@ export function ChatInput({
         type="submit"
         size="icon"
         disabled={isLoading || disabled || !value.trim()}
-        className="h-12 w-12 rounded-xl shrink-0"
+        className="h-12 w-12 rounded-xl shrink-0 bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-200 transition-all active:scale-95"
       >
         {isLoading ? (
           <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -145,7 +145,7 @@ export function QuickActions({ onSelect, disabled }: QuickActionsProps) {
   ];
 
   return (
-    <div className="flex flex-wrap gap-2 px-4 py-2">
+    <div className="flex flex-wrap gap-2 px-4 py-2 bg-slate-50/50 border-t border-slate-100">
       {quickPrompts.map((item) => (
         <Button
           key={item.label}
@@ -153,7 +153,7 @@ export function QuickActions({ onSelect, disabled }: QuickActionsProps) {
           size="sm"
           disabled={disabled}
           onClick={() => onSelect(item.prompt)}
-          className="text-xs"
+          className="text-[10px] h-7 bg-white border-slate-200 text-slate-600 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-all rounded-full px-3"
         >
           {item.label}
         </Button>

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Document } from "@/types/chat";
 
-const GO_BACKEND_URL = process.env.NEXT_PUBLIC_GO_BACKEND_URL || "http://localhost:8080";
+const GO_BACKEND_URL =
+  process.env.NEXT_PUBLIC_GO_BACKEND_URL || "http://localhost:8080";
 
 interface PDFSelectorProps {
   selected: string[];
@@ -14,7 +15,11 @@ interface PDFSelectorProps {
   className?: string;
 }
 
-export function PDFSelector({ selected, onSelect, className }: PDFSelectorProps) {
+export function PDFSelector({
+  selected,
+  onSelect,
+  className,
+}: PDFSelectorProps) {
   const [documents, setDocuments] = React.useState<Document[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -37,7 +42,9 @@ export function PDFSelector({ selected, onSelect, className }: PDFSelectorProps)
         setDocuments(data.documents || []);
       } catch (err) {
         console.error("Error fetching documents:", err);
-        setError(err instanceof Error ? err.message : "Failed to load documents");
+        setError(
+          err instanceof Error ? err.message : "Failed to load documents",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -97,12 +104,16 @@ export function PDFSelector({ selected, onSelect, className }: PDFSelectorProps)
     return (
       <Card className={cn("w-full", className)}>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Select Documents</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Select Documents
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <span className="ml-2 text-sm text-muted-foreground">Loading documents...</span>
+            <span className="ml-2 text-sm text-muted-foreground">
+              Loading documents...
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -113,7 +124,9 @@ export function PDFSelector({ selected, onSelect, className }: PDFSelectorProps)
     return (
       <Card className={cn("w-full border-destructive/50", className)}>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Select Documents</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Select Documents
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
@@ -128,7 +141,9 @@ export function PDFSelector({ selected, onSelect, className }: PDFSelectorProps)
     return (
       <Card className={cn("w-full", className)}>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Select Documents</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Select Documents
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-sm text-muted-foreground">
@@ -140,34 +155,38 @@ export function PDFSelector({ selected, onSelect, className }: PDFSelectorProps)
   }
 
   return (
-    <Card className={cn("w-full", className)}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">
+    <Card
+      className={cn("w-full border-0 bg-transparent shadow-none", className)}
+    >
+      <CardHeader className="pb-3 px-4">
+        <div className="flex flex-col gap-3">
+          <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Select Documents ({selected.length}/{documents.length})
           </CardTitle>
           <div className="flex gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="xs"
               onClick={selectAll}
               disabled={selected.length === documents.length}
+              className="flex-1 text-[10px] h-7 border-slate-200"
             >
               Select All
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="xs"
               onClick={clearAll}
               disabled={selected.length === 0}
+              className="flex-1 text-[10px] h-7 border-slate-200"
             >
               Clear
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="max-h-[300px] overflow-y-auto">
-        <div className="space-y-2">
+      <CardContent className="px-3">
+        <div className="space-y-1">
           {documents.map((doc) => {
             const isSelected = selected.includes(doc.id);
 
@@ -176,10 +195,10 @@ export function PDFSelector({ selected, onSelect, className }: PDFSelectorProps)
                 key={doc.id}
                 onClick={() => toggleDocument(doc.id)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors",
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all border",
                   isSelected
-                    ? "border-primary/50 bg-primary/5"
-                    : "border-border hover:bg-muted/50"
+                    ? "border-primary/20 bg-primary/5 text-primary"
+                    : "border-transparent text-slate-600 hover:bg-slate-100",
                 )}
               >
                 <div
@@ -187,7 +206,7 @@ export function PDFSelector({ selected, onSelect, className }: PDFSelectorProps)
                     "flex h-5 w-5 items-center justify-center rounded border transition-colors",
                     isSelected
                       ? "border-primary bg-primary text-primary-foreground"
-                      : "border-muted-foreground/30"
+                      : "border-muted-foreground/30",
                   )}
                 >
                   {isSelected && (

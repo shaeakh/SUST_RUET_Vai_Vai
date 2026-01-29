@@ -88,12 +88,15 @@ export function ChatPage({ className }: ChatPageProps) {
   );
 
   return (
-    <div className={cn("flex h-full", className)}>
+    <div className={cn("flex h-full bg-white", className)}>
       {/* Sidebar - Conversation History */}
       {showSidebar && (
-        <div className="w-64 border-r flex flex-col bg-muted/30">
-          <div className="p-4 border-b">
-            <Button onClick={handleNewConversation} className="w-full">
+        <div className="w-64 border-r border-slate-200 flex flex-col bg-slate-50">
+          <div className="p-4 border-b border-slate-200">
+            <Button
+              onClick={handleNewConversation}
+              className="w-full bg-slate-900 text-white hover:bg-slate-800 shadow-sm"
+            >
               <svg
                 className="h-4 w-4 mr-2"
                 fill="none"
@@ -113,7 +116,7 @@ export function ChatPage({ className }: ChatPageProps) {
 
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {conversations.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
+              <p className="text-sm text-slate-400 text-center py-4 font-light">
                 No conversations yet
               </p>
             ) : (
@@ -132,13 +135,14 @@ export function ChatPage({ className }: ChatPageProps) {
       )}
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Toggle buttons */}
-        <div className="flex items-center gap-2 p-2 border-b">
+        <div className="flex items-center gap-2 p-3 border-b border-slate-200 bg-white">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowSidebar(!showSidebar)}
+            className="text-slate-500 hover:text-slate-900 hover:bg-slate-100"
           >
             <svg
               className="h-4 w-4"
@@ -154,13 +158,19 @@ export function ChatPage({ className }: ChatPageProps) {
               />
             </svg>
           </Button>
-          <span className="text-sm font-medium flex-1">
+          <span className="text-sm font-semibold flex-1 text-slate-900 truncate">
             {currentConversation?.title || "New Chat"}
           </span>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => setShowDocuments(!showDocuments)}
+            className={cn(
+              "text-xs border-slate-200 font-medium",
+              showDocuments
+                ? "bg-primary/10 text-primary border-primary/20"
+                : "text-slate-500 hover:text-slate-900",
+            )}
           >
             <svg
               className="h-4 w-4 mr-1"
@@ -192,7 +202,7 @@ export function ChatPage({ className }: ChatPageProps) {
 
           {/* Document Selector Panel */}
           {showDocuments && (
-            <div className="w-72 border-l overflow-y-auto">
+            <div className="w-80 border-l border-slate-200 overflow-y-auto bg-slate-50/50">
               <PDFSelector
                 selected={selectedDocuments}
                 onSelect={handleDocumentChange}
@@ -236,15 +246,22 @@ function ConversationItem({
   return (
     <div
       className={cn(
-        "group relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm cursor-pointer transition-colors",
-        isActive ? "bg-primary/10 text-primary" : "hover:bg-muted",
+        "group relative flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm cursor-pointer transition-all duration-200",
+        isActive
+          ? "bg-primary/10 text-primary font-medium border border-primary/10"
+          : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900",
       )}
       onClick={onClick}
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}
     >
       <svg
-        className="h-4 w-4 shrink-0"
+        className={cn(
+          "h-4 w-4 shrink-0",
+          isActive
+            ? "text-primary"
+            : "text-slate-400 group-hover:text-slate-600",
+        )}
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -257,8 +274,13 @@ function ConversationItem({
         />
       </svg>
       <div className="flex-1 min-w-0">
-        <p className="truncate font-medium">{conversation.title}</p>
-        <p className="text-xs text-muted-foreground">
+        <p className="truncate">{conversation.title}</p>
+        <p
+          className={cn(
+            "text-[10px] uppercase tracking-wider font-semibold",
+            isActive ? "text-primary/60" : "text-slate-400",
+          )}
+        >
           {formatDate(conversation.updatedAt)}
         </p>
       </div>

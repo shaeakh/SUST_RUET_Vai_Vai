@@ -191,11 +191,11 @@ export function ChatInterface({
   const showQuickActions = messages.length === 0 && hasDocuments;
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div className={cn("flex flex-col h-full bg-white", className)}>
       {/* Header actions */}
-      <div className="flex items-center justify-between px-4 py-2 border-b">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 bg-slate-50/30">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
+          <span className="text-xs font-medium text-slate-500">
             {hasDocuments
               ? `${documentIds.length} document${documentIds.length > 1 ? "s" : ""} selected`
               : "General chat (no documents)"}
@@ -203,9 +203,14 @@ export function ChatInterface({
         </div>
         <div className="flex items-center gap-2">
           {isLoading && (
-            <Button variant="ghost" size="sm" onClick={stop}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={stop}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50 text-xs h-7"
+            >
               <svg
-                className="h-4 w-4 mr-1"
+                className="h-3.5 w-3.5 mr-1"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -227,9 +232,14 @@ export function ChatInterface({
             </Button>
           )}
           {messages.length > 0 && !isLoading && (
-            <Button variant="ghost" size="sm" onClick={handleClearChat}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearChat}
+              className="text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs h-7"
+            >
               <svg
-                className="h-4 w-4 mr-1"
+                className="h-3.5 w-3.5 mr-1"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

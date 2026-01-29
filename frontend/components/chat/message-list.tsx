@@ -102,11 +102,11 @@ export function MessageList({
 
 function EmptyState() {
   return (
-    <div className="text-center max-w-md space-y-4">
+    <div className="text-center max-w-md space-y-6">
       <div className="flex items-center justify-center">
-        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+        <div className="h-20 w-20 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shadow-sm">
           <svg
-            className="h-8 w-8 text-primary"
+            className="h-10 w-10 text-primary"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -114,17 +114,19 @@ function EmptyState() {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
+              strokeWidth={1.5}
               d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
             />
           </svg>
         </div>
       </div>
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">Start a conversation</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="text-xl font-bold text-slate-900">
+          Start a conversation
+        </h3>
+        <p className="text-sm text-slate-500 font-light">
           Ask questions about your course materials or request study aids like
-          summaries and notes.
+          summaries and practice notes.
         </p>
       </div>
       <div className="flex flex-wrap justify-center gap-2">
@@ -138,7 +140,7 @@ function EmptyState() {
 
 function SuggestionChip({ text }: { text: string }) {
   return (
-    <div className="px-3 py-1.5 bg-muted rounded-full text-xs text-muted-foreground border border-border">
+    <div className="px-4 py-2 bg-white rounded-full text-xs text-slate-600 border border-slate-200 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all">
       {text}
     </div>
   );

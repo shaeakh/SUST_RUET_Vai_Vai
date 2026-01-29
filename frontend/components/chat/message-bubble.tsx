@@ -42,7 +42,7 @@ export function MessageBubble({
       {/* Avatar for assistant */}
       {isAssistant && (
         <div className="flex-shrink-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/20">
             <svg
               className="h-4 w-4"
               fill="none"
@@ -70,8 +70,8 @@ export function MessageBubble({
         {/* Role label */}
         <span
           className={cn(
-            "text-xs font-medium mb-1",
-            isUser ? "text-muted-foreground" : "text-primary",
+            "text-[10px] uppercase tracking-wider font-bold mb-1",
+            isUser ? "text-slate-400" : "text-primary",
           )}
         >
           {isUser ? "You" : "Assistant"}
@@ -80,10 +80,10 @@ export function MessageBubble({
         {/* Message bubble */}
         <div
           className={cn(
-            "rounded-2xl px-4 py-3",
+            "rounded-2xl px-4 py-3 shadow-sm border border-slate-100",
             isUser
-              ? "bg-primary text-primary-foreground rounded-br-md"
-              : "bg-muted rounded-bl-md",
+              ? "bg-slate-900 text-white rounded-br-none"
+              : "bg-slate-50 text-slate-800 rounded-bl-none",
           )}
         >
           {isUser ? (
@@ -99,7 +99,9 @@ export function MessageBubble({
 
         {/* Timestamp - check if createdAt exists (may be added by storage) */}
         {(() => {
-          const createdAt = (message as unknown as { createdAt?: Date | string }).createdAt;
+          const createdAt = (
+            message as unknown as { createdAt?: Date | string }
+          ).createdAt;
           return createdAt ? (
             <span className="text-[10px] text-muted-foreground mt-1">
               {formatTimestamp(createdAt)}
