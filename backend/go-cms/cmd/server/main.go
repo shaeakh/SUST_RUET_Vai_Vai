@@ -16,7 +16,9 @@ import (
 	"github.com/shaeakh/sust-cms/infrastructure/config"
 	"github.com/shaeakh/sust-cms/infrastructure/gemini"
 	"github.com/shaeakh/sust-cms/infrastructure/postgres"
+	"github.com/shaeakh/sust-cms/infrastructure/queue"
 	"github.com/shaeakh/sust-cms/infrastructure/redis"
+	"github.com/shaeakh/sust-cms/infrastructure/workers"
 	httputil "github.com/shaeakh/sust-cms/interfaces/http"
 )
 
@@ -42,12 +44,15 @@ func main() {
 	embeddingRepo := postgres.NewContentEmbeddingRepository(db)
 	searchReqRepo := postgres.NewSearchRequestRepository(db)
 
-	// Initialize Redis queue
+	// Initialize Redis queue and embedding queue
 	searchQueue, err := redis.NewSearchQueue(cfg)
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
 	defer searchQueue.Close()
+
+	redisClient := searchQueue.GetClient()
+	embeddingQueue := queue.NewEmbeddingQueue(redisClient)
 
 	// Initialize Gemini embedder
 	if cfg.GeminiAPIKey == "" {
@@ -65,12 +70,18 @@ func main() {
 	// Initialize services
 	authService := services.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTExpiration)
 	classroomService := services.NewClassroomService(classroomRepo, classroomMemberRepo)
-	contentService := services.NewContentService(contentRepo, embeddingRepo, geminiEmbedder)
+	contentService := services.NewContentService(contentRepo, embeddingRepo, geminiEmbedder, embeddingQueue)
 	searchService := services.NewSearchService(embeddingRepo, contentRepo, searchReqRepo, geminiEmbedder, searchQueue)
+	contentGenService := services.NewContentGenerationService(embeddingRepo, contentRepo, geminiEmbedder)
 
 	// Setup router
 	router := mux.NewRouter()
-	httputil.SetupRoutes(router, authService, classroomService, contentService, searchService)
+	httputil.SetupRoutes(router, authService, classroomService, contentService, searchService, contentGenService)
+
+	// Initialize and start embedding worker
+	embeddingWorker := workers.NewEmbeddingWorker(embeddingQueue, contentService, "worker-1")
+	embeddingWorker.Start()
+	log.Println("✓ Embedding worker started")
 
 	// Create server
 	server := &http.Server{
@@ -96,6 +107,10 @@ func main() {
 	<-sigChan
 
 	log.Println("Shutting down server...")
+	
+	// Stop embedding worker
+	embeddingWorker.Stop()
+	
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -104,13 +119,4 @@ func main() {
 	}
 
 	log.Println("Server stopped")
-}
-
-// Add missing Server type (http package uses net/http, not ours)
-type Server struct {
-	Addr           string
-	Handler        http.Handler
-	ReadTimeout    time.Duration
-	WriteTimeout   time.Duration
-	MaxHeaderBytes int
 }

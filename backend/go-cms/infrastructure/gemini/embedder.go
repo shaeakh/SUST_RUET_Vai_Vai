@@ -12,6 +12,7 @@ import (
 // Embedder handles Gemini embeddings for text
 type Embedder struct {
 	client *genai.Client
+	apiKey string
 }
 
 // NewEmbedder creates a new Gemini embedder
@@ -21,7 +22,7 @@ func NewEmbedder(apiKey string) (*Embedder, error) {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
-	return &Embedder{client: client}, nil
+	return &Embedder{client: client, apiKey: apiKey}, nil
 }
 
 // Embed generates an embedding for the given text using Gemini
@@ -79,7 +80,12 @@ func (e *Embedder) Close() error {
 	return e.client.Close()
 }
 
-// GetDimensions returns the embedding dimension (Gemini uses 768-dimensional embeddings)
+// GetAPIKey returns the API key (needed for creating new clients)
+func (e *Embedder) GetAPIKey() string {
+	return e.apiKey
+}
+
+// GetDimensions returns the embedding dimension (768 for Gemini embedding-001)
 func (e *Embedder) GetDimensions() int {
 	return 768
 }

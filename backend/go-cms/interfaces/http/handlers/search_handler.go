@@ -67,6 +67,61 @@ func (sh *SearchHandler) SemanticSearch(w http.ResponseWriter, r *http.Request) 
 	types.WriteJSON(w, http.StatusOK, responses)
 }
 
+// RAGSearch performs retrieval augmented generation
+func (sh *SearchHandler) RAGSearch(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	classroomID := vars["classroom_id"]
+
+	_, ok := r.Context().Value("user_id").(string)
+	if !ok {
+		types.WriteError(w, http.StatusUnauthorized, "User not found", "UNAUTHORIZED")
+		return
+	}
+
+	var req types.SearchRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		types.WriteError(w, http.StatusBadRequest, "Invalid request body", "INVALID_REQUEST")
+		return
+	}
+
+	if req.Query == "" {
+		types.WriteError(w, http.StatusBadRequest, "Query cannot be empty", "EMPTY_QUERY")
+		return
+	}
+
+	// Perform RAG (Retrieval Augmented Generation)
+	ragResponse, err := sh.searchService.RetrievalAugmentedGeneration(r.Context(), req.Query, classroomID, 10)
+	if err != nil {
+		types.WriteError(w, http.StatusInternalServerError, "RAG search failed", "RAG_FAILED")
+		return
+	}
+
+	// Convert source chunks to response format
+	var sourceChunks []types.SearchResponse
+	for _, chunk := range ragResponse.SourceChunks {
+		sourceChunks = append(sourceChunks, types.SearchResponse{
+			ContentID:   chunk.ContentID,
+			Title:       chunk.Title,
+			ContentType: chunk.ContentType,
+			ChunkIndex:  chunk.ChunkIndex,
+			ChunkText:   chunk.ChunkText,
+			Topic:       chunk.Topic,
+			Week:        chunk.Week,
+			Tags:        chunk.Tags,
+			UploadedAt:  chunk.UploadedAt.String(),
+		})
+	}
+
+	response := map[string]interface{}{
+		"query":            ragResponse.Query,
+		"generated_answer": ragResponse.GeneratedAnswer,
+		"source_chunks":    sourceChunks,
+		"chunk_count":      ragResponse.ChunkCount,
+	}
+
+	types.WriteJSON(w, http.StatusOK, response)
+}
+
 // EnqueueSearch enqueues a search request
 func (sh *SearchHandler) EnqueueSearch(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

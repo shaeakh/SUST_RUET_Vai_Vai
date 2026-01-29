@@ -13,6 +13,12 @@ import (
 func JWTAuth(authService *services.AuthService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Allow preflight OPTIONS requests without authentication
+			if r.Method == http.MethodOptions {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
 				types.WriteError(w, http.StatusUnauthorized, "Missing authorization header", "UNAUTHORIZED")
@@ -69,13 +75,18 @@ func RequestLogger(next http.Handler) http.Handler {
 	})
 }
 
-// CORS middleware handles CORS
+// CORS middleware handles CORS with full access
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Max-Age", "86400")
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type, Authorization")
 
+		// Handle preflight requests
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return

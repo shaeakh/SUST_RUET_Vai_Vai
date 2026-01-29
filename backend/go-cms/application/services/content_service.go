@@ -11,13 +11,15 @@ import (
 	"github.com/shaeakh/sust-cms/domain/entities"
 	"github.com/shaeakh/sust-cms/domain/repositories"
 	"github.com/shaeakh/sust-cms/infrastructure/gemini"
+	"github.com/shaeakh/sust-cms/infrastructure/queue"
 )
 
 // ContentService handles content management operations
 type ContentService struct {
-	contentRepo     repositories.ContentRepository
-	embeddingRepo   repositories.ContentEmbeddingRepository
-	geminiEmbedder  *gemini.Embedder
+	contentRepo      repositories.ContentRepository
+	embeddingRepo    repositories.ContentEmbeddingRepository
+	geminiEmbedder   *gemini.Embedder
+	embeddingQueue   *queue.EmbeddingQueue
 }
 
 // NewContentService creates a new ContentService
@@ -25,11 +27,13 @@ func NewContentService(
 	contentRepo repositories.ContentRepository,
 	embeddingRepo repositories.ContentEmbeddingRepository,
 	geminiEmbedder *gemini.Embedder,
+	embeddingQueue *queue.EmbeddingQueue,
 ) *ContentService {
 	return &ContentService{
 		contentRepo:    contentRepo,
 		embeddingRepo:  embeddingRepo,
 		geminiEmbedder: geminiEmbedder,
+		embeddingQueue: embeddingQueue,
 	}
 }
 
@@ -55,6 +59,23 @@ func (cs *ContentService) UploadContent(ctx context.Context, classroomID, title,
 
 	if err := cs.contentRepo.Save(ctx, content); err != nil {
 		return nil, fmt.Errorf("failed to save content: %w", err)
+	}
+
+	// Enqueue embedding generation job in background
+	job := &queue.EmbeddingJob{
+		JobID:       uuid.New().String(),
+		ContentID:   content.ID,
+		ClassroomID: classroomID,
+		FileURL:     fileURL,
+		Title:       title,
+		MimeType:    mimeType,
+		CreatedAt:   time.Now(),
+		Retries:     0,
+	}
+
+	if err := cs.embeddingQueue.Enqueue(ctx, job); err != nil {
+		// Log the error but don't fail the upload - embeddings can be generated later
+		fmt.Printf("Warning: Failed to enqueue embedding job: %v\n", err)
 	}
 
 	return content, nil

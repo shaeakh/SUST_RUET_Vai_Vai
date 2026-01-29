@@ -132,6 +132,11 @@ func (sq *SearchQueue) ClearQueue(ctx context.Context) error {
 	return nil
 }
 
+// GetClient returns the Redis client for use by other services
+func (sq *SearchQueue) GetClient() *redis.Client {
+	return sq.client
+}
+
 // Close closes the Redis connection
 func (sq *SearchQueue) Close() error {
 	return sq.client.Close()

@@ -12,6 +12,7 @@ require (
 	github.com/pgvector/pgvector-go v0.1.1
 	github.com/redis/go-redis/v9 v9.5.0
 	golang.org/x/crypto v0.22.0
+	google.golang.org/api v0.149.0
 )
 
 require (
@@ -32,7 +33,6 @@ require (
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/api v0.149.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80 // indirect

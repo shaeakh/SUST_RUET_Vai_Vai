@@ -3,13 +3,14 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Install build dependencies
-RUN apk add --no-cache git
+# Install build dependencies (including git for go mod)
+RUN apk add --no-cache git ca-certificates
 
 # Copy go mod files
 COPY go.mod go.sum ./
 
-# Download dependencies
+# Tidy and download dependencies
+RUN go mod tidy
 RUN go mod download
 
 # Copy source code
