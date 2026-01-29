@@ -11,6 +11,13 @@ export interface CourseMaterial {
   fileUrl: string;
   uploadedBy: string;
   uploadedAt: string;
+  weekNumber?: number;
+  tags?: string[];
+  description?: string;
+  content?: string; // Extracted/mock content for semantic search
+  language?: string; // For code files: "cpp", "python", "java", etc.
+  syntaxTokens?: string[]; // For syntax-aware search in code files
+  size?: string; // File size display: "2.5 MB", "3 KB", etc.
 }
 
 export interface WeekMaterials {
@@ -64,19 +71,106 @@ export function generateMockCourseMaterials(
         materials: [
           {
             id: "mat-001",
-            name: "Introduction to Machine Learning.pdf",
+            name: "Introduction to C++ Programming.pdf",
             type: "PDF",
-            fileUrl: "/mock-files/ml-intro.pdf",
+            fileUrl: "/sample_files/ClassWork1.pdf",
             uploadedBy: "admin",
             uploadedAt: "2024-01-15",
+            weekNumber: 1,
+            tags: ["C++", "Programming", "Basics", "Introduction", "Syntax"],
+            description:
+              "Introduction to C++ programming covering basics, syntax, variables, data types, and control structures",
+            content:
+              "This document covers the fundamentals of C++ programming language including variables, data types, operators, control flow statements, functions, and basic input/output operations. Topics include: int, float, char, arrays, loops, conditionals, and function declarations.",
+            size: "2.5 MB",
           },
           {
             id: "mat-002",
-            name: "Week 1 Lecture Slides.pptx",
+            name: "Object Oriented Programming in C++.pptx",
             type: "Slide",
-            fileUrl: "/mock-files/week1-slides.pptx",
+            fileUrl: "/sample_files/ClassWork2.pptx",
             uploadedBy: "admin",
-            uploadedAt: "2024-01-15",
+            uploadedAt: "2024-01-20",
+            weekNumber: 2,
+            tags: [
+              "C++",
+              "OOP",
+              "Classes",
+              "Objects",
+              "Inheritance",
+              "Polymorphism",
+            ],
+            description:
+              "Object-oriented programming concepts in C++ including classes, inheritance, polymorphism, and encapsulation",
+            content:
+              "Comprehensive coverage of OOP principles in C++. Topics: class definition, constructors, destructors, access specifiers, inheritance types, virtual functions, abstract classes, operator overloading, and friend functions.",
+            size: "1.8 MB",
+          },
+          {
+            id: "mat-003",
+            name: "Binary Search Implementation.cpp",
+            type: "Code",
+            fileUrl: "/mock-files/binary-search.cpp",
+            uploadedBy: "admin",
+            uploadedAt: "2024-01-22",
+            weekNumber: 3,
+            tags: [
+              "C++",
+              "Algorithms",
+              "Binary Search",
+              "Searching",
+              "Divide and Conquer",
+            ],
+            description:
+              "Binary search algorithm implementation in C++ with iterative and recursive approaches",
+            content: `// Binary Search in C++
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int binarySearch(vector<int>& arr, int target) {
+    int left = 0, right = arr.size() - 1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (arr[mid] == target) return mid;
+        if (arr[mid] < target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1;
+}`,
+            language: "cpp",
+            syntaxTokens: [
+              "include",
+              "iostream",
+              "vector",
+              "binarySearch",
+              "int",
+              "while",
+              "return",
+            ],
+            size: "3 KB",
+          },
+          {
+            id: "mat-004",
+            name: "Python Data Structures.pdf",
+            type: "PDF",
+            fileUrl: "/mock-files/python-ds.pdf",
+            uploadedBy: "admin",
+            uploadedAt: "2024-01-25",
+            weekNumber: 1,
+            tags: [
+              "Python",
+              "Data Structures",
+              "Lists",
+              "Dictionaries",
+              "Tuples",
+              "Sets",
+            ],
+            description:
+              "Comprehensive guide to Python data structures including lists, tuples, dictionaries, and sets",
+            content:
+              "Python provides several built-in data structures. Lists are mutable sequences, tuples are immutable, dictionaries store key-value pairs, and sets contain unique elements. This guide covers operations, methods, and best practices for each data structure.",
+            size: "1.2 MB",
           },
         ],
       },
@@ -84,20 +178,76 @@ export function generateMockCourseMaterials(
         weekNumber: 2,
         materials: [
           {
-            id: "mat-003",
-            name: "Linear Regression Code.py",
+            id: "mat-005",
+            name: "Sorting Algorithms in C++.cpp",
             type: "Code",
-            fileUrl: "/mock-files/linear-regression.py",
+            fileUrl: "/mock-files/sorting.cpp",
             uploadedBy: "admin",
-            uploadedAt: "2024-01-22",
+            uploadedAt: "2024-01-28",
+            weekNumber: 4,
+            tags: [
+              "C++",
+              "Algorithms",
+              "Sorting",
+              "Bubble Sort",
+              "Quick Sort",
+              "Merge Sort",
+            ],
+            description:
+              "Implementation of various sorting algorithms in C++ including bubble sort, quick sort, and merge sort",
+            content: `// Sorting Algorithms in C++
+#include <iostream>
+#include <vector>
+using namespace std;
+
+void bubbleSort(vector<int>& arr) {
+    int n = arr.size();
+    for (int i = 0; i < n-1; i++) {
+        for (int j = 0; j < n-i-1; j++) {
+            if (arr[j] > arr[j+1]) {
+                swap(arr[j], arr[j+1]);
+            }
+        }
+    }
+}
+
+void quickSort(vector<int>& arr, int low, int high) {
+    // Quick sort implementation
+}`,
+            language: "cpp",
+            syntaxTokens: [
+              "include",
+              "vector",
+              "bubbleSort",
+              "quickSort",
+              "swap",
+              "for",
+              "void",
+            ],
+            size: "5 KB",
           },
           {
-            id: "mat-004",
-            name: "Week 2 Problem Sheet.pdf",
-            type: "Problem Sheet",
-            fileUrl: "/mock-files/week2-problems.pdf",
+            id: "mat-006",
+            name: "C++ STL Containers Guide.pdf",
+            type: "PDF",
+            fileUrl: "/sample_files/ClassWork1.pdf",
             uploadedBy: "admin",
-            uploadedAt: "2024-01-22",
+            uploadedAt: "2024-02-01",
+            weekNumber: 5,
+            tags: [
+              "C++",
+              "STL",
+              "Containers",
+              "Vector",
+              "Map",
+              "Set",
+              "Advanced",
+            ],
+            description:
+              "Complete guide to C++ Standard Template Library containers including vector, map, set, and their operations",
+            content:
+              "The C++ STL provides powerful container classes: vector for dynamic arrays, map for key-value storage, set for unique elements, list for doubly-linked lists, and more. Each container has specific use cases, time complexities, and member functions.",
+            size: "2.1 MB",
           },
         ],
       },
@@ -105,12 +255,59 @@ export function generateMockCourseMaterials(
         weekNumber: 3,
         materials: [
           {
-            id: "mat-005",
-            name: "Neural Networks Basics.pptx",
-            type: "Slide",
-            fileUrl: "/mock-files/nn-basics.pptx",
+            id: "mat-007",
+            name: "Java Basics.pdf",
+            type: "PDF",
+            fileUrl: "/mock-files/java-basics.pdf",
             uploadedBy: "admin",
-            uploadedAt: "2024-01-29",
+            uploadedAt: "2024-02-05",
+            weekNumber: 1,
+            tags: ["Java", "Programming", "Basics", "OOP", "Introduction"],
+            description:
+              "Introduction to Java programming language covering syntax, OOP concepts, and basic applications",
+            content:
+              "Java is an object-oriented programming language. This guide covers Java syntax, data types, classes, objects, inheritance, interfaces, exception handling, and collections framework.",
+            size: "1.9 MB",
+          },
+          {
+            id: "mat-008",
+            name: "Graph Algorithms C++.cpp",
+            type: "Code",
+            fileUrl: "/mock-files/graph-algorithms.cpp",
+            uploadedBy: "admin",
+            uploadedAt: "2024-02-10",
+            weekNumber: 6,
+            tags: ["C++", "Algorithms", "Graph", "BFS", "DFS", "Dijkstra"],
+            description:
+              "Graph algorithms implementation in C++ including BFS, DFS, and Dijkstra's shortest path",
+            content: `// Graph Algorithms in C++
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+class Graph {
+    int V;
+    vector<vector<int>> adj;
+public:
+    Graph(int V) : V(V), adj(V) {}
+    void addEdge(int u, int v) {
+        adj[u].push_back(v);
+    }
+    void BFS(int start);
+    void DFS(int start);
+};`,
+            language: "cpp",
+            syntaxTokens: [
+              "include",
+              "vector",
+              "queue",
+              "Graph",
+              "BFS",
+              "DFS",
+              "class",
+            ],
+            size: "4 KB",
           },
         ],
       },
@@ -339,4 +536,20 @@ export function incrementUserAttempts(
   } catch {
     return 0;
   }
+}
+
+// Helper function to get all materials from course materials data
+export function getAllMaterials(
+  courseMaterials: CourseMaterialsData,
+): CourseMaterial[] {
+  const allMaterials: CourseMaterial[] = [];
+  courseMaterials.weeks.forEach((week) => {
+    week.materials.forEach((material) => {
+      allMaterials.push({
+        ...material,
+        weekNumber: week.weekNumber,
+      });
+    });
+  });
+  return allMaterials;
 }

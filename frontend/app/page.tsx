@@ -1,6 +1,9 @@
 "use client";
 
+import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import * as React from "react";
 import { motion } from "framer-motion";
 import {
   BookOpen,
@@ -14,6 +17,14 @@ import {
 } from "lucide-react";
 
 export default function Page() {
+  const router = useRouter();
+  const { loading, isAuthenticated } = useAuth();
+
+  React.useEffect(() => {
+    if (loading) return;
+    if (isAuthenticated) router.replace("/dashboard");
+  }, [isAuthenticated, loading, router]);
+
   return (
     <div className="min-h-screen bg-white text-slate-900 selection:bg-primary/10 selection:text-primary">
       {/* Dynamic Background */}

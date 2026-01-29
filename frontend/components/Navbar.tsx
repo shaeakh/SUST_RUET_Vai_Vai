@@ -1,8 +1,9 @@
 "use client";
 
 import { Button } from "@/components/Button";
+import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import * as React from "react";
 
 interface NavbarProps {
@@ -17,19 +18,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   showDashboardLinks = false,
 }) => {
   const pathname = usePathname();
-  const router = useRouter();
+  const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = React.useState(false);
 
   const handleLogout = () => {
-    // Clear mock auth state and redirect to landing
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("vai-vai-user");
-    }
-    // In a real app you might call an API here.
-    // eslint-disable-next-line no-console
-    console.log("Logged out");
-    router.push("/");
+    logout();
   };
+
+  const displayName = userName ?? user?.full_name;
 
   return (
     <header className="w-full border-b border-border/60 bg-background/80 backdrop-blur">
@@ -47,10 +43,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {showDashboardLinks && userName && (
+          {showDashboardLinks && displayName && (
             <div className="hidden items-center gap-3 sm:flex">
               <span className="text-sm text-muted-foreground">
-                Hi, {userName}
+                Hi, {displayName}
               </span>
               <Button
                 variant="outline"
@@ -94,9 +90,9 @@ export const Navbar: React.FC<NavbarProps> = ({
       {menuOpen && (
         <div className="border-t border-border/60 bg-background px-4 py-3 sm:hidden">
           <div className="flex flex-col gap-2">
-            {showDashboardLinks && userName && (
+            {showDashboardLinks && displayName && (
               <div className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm">
-                <span className="font-medium">{userName}</span>
+                <span className="font-medium">{displayName}</span>
                 <button
                   type="button"
                   onClick={handleLogout}
