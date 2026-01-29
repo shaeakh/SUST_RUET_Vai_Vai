@@ -16,6 +16,11 @@ export type Classroom = {
   join_code: string;
   created_at: string;
   /**
+   * Optional UI metadata. The backend may not return this yet.
+   * The dashboard expects an array (often empty).
+   */
+  tags?: string[];
+  /**
    * Optional: backend may or may not return it, but UI can use it.
    * Expected request values: "thoery" | "lab"
    */
